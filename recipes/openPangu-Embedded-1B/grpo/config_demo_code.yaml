@@ -1,10 +1,11 @@
 # Model arguments
-model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+model_name_or_path: FreedomIntelligence/openPangu-Embedded-1B
 model_revision: main
 torch_dtype: bfloat16
 attn_implementation: flash_attention_2
 
 # Data training arguments
+chat_template: "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '[unused9]系统：[unused10]' }}{% endif %}{% if message['role'] == 'system' %}{{ '[unused9]系统：' + message['content'] + '[unused10]' }}{% endif %}{% if message['role'] == 'assistant' %}{{'[unused9]助手：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'tool' %}{{'[unused9]工具：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'function' %}{{'[unused9]方法：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'user' %}{{'[unused9]用户：' + message['content'] + '[unused10]'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '[unused9]助手：' }}{% endif %}"
 dataset_name: open-r1/verifiable-coding-problems-python
 dataset_prompt_column: problem_statement
 system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n...\n</answer>"
@@ -18,7 +19,7 @@ gradient_accumulation_steps: 16
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: Qwen2.5-1.5B-Open-R1-Code-GRPO
+hub_model_id: openPangu-Embedded-1B-Code-GRPO
 hub_strategy: every_save
 learning_rate: 5.0e-06
 log_completions: true
@@ -34,7 +35,7 @@ max_completion_length: 2048
 max_steps: 500
 num_generations: 14
 num_train_epochs: 1
-output_dir: logs/Qwen2.5-1.5B-Open-R1-Code-GRPO
+output_dir: logs/openPangu-Embedded-1B-Code-GRPO
 overwrite_output_dir: true
 per_device_train_batch_size: 16
 push_to_hub: true

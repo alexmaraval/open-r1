@@ -120,6 +120,14 @@ class ScriptArguments(trl.ScriptArguments):
                     )
 
 
+@dataclass
+class ModelConfig(trl.ModelConfig):
+    local_files_only: Optional[bool] = field(
+        default=False,
+        metadata={'help': 'Whether to use local files only when loading model weights.'},
+    )
+
+
 # TODO: add the shared options with a mixin to reduce code duplication
 @dataclass
 class GRPOConfig(trl.GRPOConfig):

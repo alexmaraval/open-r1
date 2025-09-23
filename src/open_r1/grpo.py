@@ -26,7 +26,8 @@ from open_r1.rewards import get_reward_funcs
 from open_r1.utils import get_dataset, get_model, get_tokenizer
 from open_r1.utils.callbacks import get_callbacks
 from open_r1.utils.wandb_logging import init_wandb_training
-from trl import GRPOTrainer, ModelConfig, TrlParser, get_peft_config
+from open_r1.configs import ModelConfig
+from trl import GRPOTrainer, TrlParser, get_peft_config
 
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,7 @@ def main(script_args, training_args, model_args):
     kwargs = {
         "dataset_name": script_args.dataset_name,
         "tags": ["open-r1"],
+        "private": True
     }
     if trainer.accelerator.is_main_process:
         trainer.create_model_card(**kwargs)

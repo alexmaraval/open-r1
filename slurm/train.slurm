@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=open_r1
-#SBATCH --ntasks-per-node=1
-#SBATCH --exclusive
-#SBATCH --gres=gpu:8
-#SBATCH --partition=hopper-prod  # Adjust this for your cluster
+#SBATCH --partition=agentS-long
 #SBATCH --output=./logs/%x-%j.out
 #SBATCH --error=./logs/%x-%j.err
+#SBATCH --job-name=open_r1
+#SBATCH --time=5-00:00:00
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:h200:2
 #SBATCH --requeue
-#SBATCH --time=3-00:00:00
 
 
 if [[ "$*" == *"--help"* ]]; then
@@ -24,17 +24,19 @@ if [[ "$*" == *"--help"* ]]; then
 fi
 
 # Specific configuration optimized for the Hugging Face Compute Cluster
-module load cuda/12.4
+#module load cuda/12.4
 set -x -e
 
-source ~/.bashrc
-source openr1/bin/activate
+#source ~/.bashrc
+eval "$(conda shell.bash hook)"
+cd ~/Projects/open-r1/
+source .venv/bin/activate
 START_TIME=$(date +%s)
 echo "START TIME: $(date)"
 
-# Refresh Weka on h4 cache
-echo "Refreshing Weka filesystem..."
-find -L /fsx/h4/ -type f | xargs -d '\n' -r -n512 -P64 weka fs tier fetch
+## Refresh Weka on h4 cache
+#echo "Refreshing Weka filesystem..."
+#find -L /fsx/h4/ -type f | xargs -d '\n' -r -n512 -P64 weka fs tier fetch
 
 # Default values
 MODEL=""
@@ -44,6 +46,8 @@ ACCELERATOR=""
 DP=1
 TP=1
 OPTIONAL_ARGS=""
+
+export WANDB_PROJECT="open-r1"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -113,7 +117,7 @@ REVISION=$(grep 'model_revision:' $CONFIG_FILE | head -n 1 | awk '{print $2}')
 
 # Distributed configuration
 NUM_NODES=$SLURM_NNODES
-GPUS_PER_NODE=8
+GPUS_PER_NODE=2
 WORLD_SIZE=$(($NUM_NODES*$GPUS_PER_NODE))
 NODELIST=($(scontrol show hostnames $SLURM_JOB_NODELIST))
 MASTER_ADDR=${NODELIST[0]}  # First node for main process
@@ -130,7 +134,14 @@ if [[ "$USE_VLLM" == "true" ]]; then
      VLLM_NODE=${NODELIST[-1]} # Last node
      WORLD_SIZE=$((WORLD_SIZE - GPUS_PER_NODE))
      NUM_NODES=$((NUM_NODES - 1))
-     srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE trl vllm-serve --model $MODEL --revision $REVISION --tensor_parallel_size $TP --data_parallel_size $DP &
+     srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
+      trl vllm-serve --model $MODEL --revision $REVISION \
+      --tensor_parallel_size $TP --data_parallel_size $DP \
+      --enforce-eager False --trust_remote_code &
+#      srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
+#        vllm serve $MODEL --revision $REVISION \
+#        --tensor_parallel_size $TP --data_parallel_size $DP \
+#        --no-enforce-eager --trust-remote-code &
 
      OPTIONAL_ARGS="$OPTIONAL_ARGS --vllm_server_host=$VLLM_NODE"
 fi
@@ -157,8 +168,8 @@ export LAUNCHER="ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerat
     --machine_rank $SLURM_PROCID \
     --rdzv_backend=c10d \
     --max_restarts 1 \
-    --tee 3 \
-    "
+    --tee 3"
+
 # srun error handling:
 # --wait=60: wait 60 sec after the first task terminates before terminating all remaining tasks
 # --kill-on-bad-exit=1: terminate a step if any task exits with a non-zero exit code
