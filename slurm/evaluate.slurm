@@ -1,20 +1,20 @@
 #!/bin/bash
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:8
-#SBATCH --partition=hopper-prod
+#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=agentS-long
 #SBATCH --output=./logs/%x-%j.out
 #SBATCH --error=./logs/%x-%j.err
 #SBATCH --requeue
-#SBATCH --time=1-00:00:00
+#SBATCH --time=1-12:00:00
 
 
 # Specific configuration optimized for the Hugging Face Compute Cluster
 # Be ye warned this may not work on other clusters!
-module load cuda/12.4
+#module load cuda/12.4
 
 # Refresh Weka on h4 cache
-echo "Refreshing Weka filesystem..."
-find -L /fsx/h4/ -type f | xargs -d '\n' -r -n512 -P64 weka fs tier fetch
+#echo "Refreshing Weka filesystem..."
+#find -L /fsx/h4/ -type f | xargs -d '\n' -r -n512 -P64 weka fs tier fetch
 
 # Needed for vLLM
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
@@ -22,7 +22,8 @@ export VLLM_WORKER_MULTIPROC_METHOD=spawn
 set -x -e
 
 source ~/.bashrc
-source openr1/bin/activate
+cd ~/Projects/open-r1
+source .venv/bin/activate
 
 TASK_NAME=$1
 TASKS=$2
@@ -41,10 +42,12 @@ else
     MODEL_ARGS="model_name=$MODEL_ID,revision=$MODEL_REVISION,trust_remote_code=$TRUST_REMOTE_CODE,dtype=bfloat16,data_parallel_size=$NUM_GPUS,max_model_length=32768,gpu_memory_utilization=0.8,generation_parameters={max_new_tokens:32768,temperature:0.6,top_p:0.95}"
 fi
 
-LM_EVAL_REPO_ID="open-r1/open-r1-eval-leaderboard"
+#LM_EVAL_REPO_ID="open-r1/open-r1-eval-leaderboard"
+LM_EVAL_REPO_ID="alexmaraval/open-r1-eval-leaderboard"
 MODEL_NAME=$(echo $MODEL_ID | sed 's/\//_/g') # replaces / with _
-DETAILS_REPO_ID="open-r1/details-$MODEL_NAME"
-OUTPUT_DIR="eval_results/$MODEL_ID/$MODEL_REVISION/$TASK_NAME"
+#DETAILS_REPO_ID="open-r1/details-$MODEL_NAME"
+DETAILS_REPO_ID="alexmaraval/details-$MODEL_NAME"
+OUTPUT_DIR="eval_results/$MODEL_NAME/$MODEL_REVISION/$TASK_NAME"
 # We need this flag since we run this script from training jobs that use DeepSpeed and the env vars get progated which causes errors during evaluation
 ACCELERATE_USE_DEEPSPEED=false
 
@@ -61,7 +64,7 @@ for filepath in $OUTPUT_FILEPATHS; do
     echo "Uploading $filepath to Hugging Face Hub..."
     filename=$(basename -- "$filepath")
     for attempt in {1..20}; do
-        if huggingface-cli upload --repo-type space --private $LM_EVAL_REPO_ID $filepath $OUTPUT_DIR/$filename; then
+        if hf upload --repo-type space --private $LM_EVAL_REPO_ID $filepath $OUTPUT_DIR/$filename; then
             echo "Upload succeeded for $filepath"
             break
         else
@@ -75,9 +78,10 @@ echo "Uploading details to Hugging Face Hub..."
 DETAILS_FILEPATHS=$(find $OUTPUT_DIR/details/ -type f \( -name "*.parquet" \))
 echo "DETAILS_FILEPATHS: $DETAILS_FILEPATHS"
 TIMESTAMP=$(date +"%Y-%m-%dT%H-%M-%S")
-python scripts/upload_details.py --data_files $DETAILS_FILEPATHS --hub_repo_id $DETAILS_REPO_ID --config_name $MODEL_REVISION.$TASK_NAME.$TIMESTAMP
+python scripts/upload_details.py --data_files "$DETAILS_FILEPATHS" --hub_repo_id "$DETAILS_REPO_ID" \
+  --config_name "${MODEL_REVISION}.${TASK_NAME}.${TIMESTAMP}"
     
-echo "Cleaning up ..."
-rm -rf $OUTPUT_DIR
+#echo "Cleaning up ..."
+#rm -rf $OUTPUT_DIR
 
 echo "Done!"
