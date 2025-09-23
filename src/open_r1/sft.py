@@ -95,6 +95,15 @@ def main(script_args, training_args, model_args):
         logger.info("No chat template provided, defaulting to ChatML.")
         model, tokenizer = setup_chat_format(model, tokenizer, format="chatml")
 
+    # sanitize invalid config before training
+    if hasattr(model, "generation_config"):
+        gen_cfg = model.generation_config
+        gen_cfg.do_sample = False
+        gen_cfg.top_p = None
+        gen_cfg.top_k = None
+
+    print(model.generation_config)
+
     ############################
     # Initialize the SFT Trainer
     ############################
