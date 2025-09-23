@@ -1,28 +1,40 @@
 # SFT
 
 ```shell
-sbatch --job-name=openPangu-distill --nodes=1 slurm/train.slurm \
-  --model openPangu-Embedded-1B \
-  --task sft \
-  --config distill \
-  --accelerator zero2 \
-  --dp 4 \
-  --args "--run_name=openPangu-distill"
+sbatch \
+  --job-name="debug-openPangu-distill" \
+  --nodes=1 \
+  --partition="agentS-long" \
+  --time="1-12:00:00" \
+  --gres="gpu:h200:2" \
+  --ntasks-per-node=1 \
+  slurm/train.slurm \
+      --model "openPangu-Embedded-1B" \
+      --task "sft" \
+      --config "distill_debug" \
+      --accelerator "zero2_debug" \
+      --dp 2 \
+      --args "--run_name=debug-openPangu-distill"
 ```
 
 # GRPO
 
+**Note** that we need 2 nodes for GRPO training, one node for the trainer/policy and one node for the vLLM server. In
+this particular example, node will have 2GPUs and DP=2.
+
 ```shell
 sbatch \
-  --job-name="openPangu-grpo" \
+  --job-name="openPangu-grpo-math" \
   --nodes=2 \
   --partition="agentS-xlong" \
   --time="5-00:00:00" \
+  --gres="gpu:h200:2" \
+  --ntasks-per-node=1 \
   slurm/train.slurm \
-      --model openPangu-Embedded-1B \
-      --task grpo \
-      --config math \
-      --accelerator zero2 \
+      --model "openPangu-Embedded-1"B \
+      --task "grpo" \
+      --config "math" \
+      --accelerator "zero2" \
       --dp 2 \
       --args "--run_name=openPangu-grpo-math"
 ```

@@ -34,7 +34,7 @@ max_completion_length: 1024
 max_steps: -1
 num_generations: 16
 num_train_epochs: 4
-output_dir: logs/openPangu-Embedded-1B-Math-GRPO
+output_dir: runs/openPangu-Embedded-1B-Math-GRPO
 overwrite_output_dir: true
 per_device_eval_batch_size: 16
 per_device_train_batch_size: 16

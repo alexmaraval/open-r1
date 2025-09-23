@@ -74,6 +74,9 @@ class ScriptArguments(trl.ScriptArguments):
         default=None,
         metadata={"help": "Configuration for creating dataset mixtures with advanced options like shuffling."},
     )
+    debug_run: Optional[bool] = field(
+        default=False, metadata={"help": "Debug run."}
+    )
 
     def __post_init__(self):
         if self.dataset_name is None and self.dataset_mixture is None:
