@@ -151,7 +151,6 @@ def main(script_args, training_args, model_args):
     kwargs = {
         "dataset_name": script_args.dataset_name,
         "tags": ["open-r1"],
-        "private": True
     }
     if trainer.accelerator.is_main_process:
         trainer.create_model_card(**kwargs)

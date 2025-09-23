@@ -23,6 +23,7 @@ gradient_checkpointing_kwargs:
   use_reentrant: false
 hub_model_id: openPangu-Embedded-1B-Math-GRPO
 hub_strategy: every_save
+hub_private_repo: true
 learning_rate: 2.0e-05
 log_completions: true
 log_level: info

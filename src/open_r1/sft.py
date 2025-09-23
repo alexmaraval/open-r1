@@ -102,8 +102,6 @@ def main(script_args, training_args, model_args):
         gen_cfg.top_p = None
         gen_cfg.top_k = None
 
-    print(model.generation_config)
-
     ############################
     # Initialize the SFT Trainer
     ############################
@@ -147,7 +145,6 @@ def main(script_args, training_args, model_args):
     kwargs = {
         "dataset_name": script_args.dataset_name,
         "tags": ["open-r1"],
-        "private": True
     }
     if trainer.accelerator.is_main_process:
         trainer.create_model_card(**kwargs)

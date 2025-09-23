@@ -24,6 +24,7 @@ gradient_checkpointing_kwargs:
   use_reentrant: false
 hub_model_id: openPangu-Embedded-1B-Distill
 hub_strategy: every_save
+hub_private_repo: true
 learning_rate: 4.0e-05
 log_level: info
 logging_steps: 1

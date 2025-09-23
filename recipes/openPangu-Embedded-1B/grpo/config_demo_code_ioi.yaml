@@ -21,6 +21,7 @@ gradient_checkpointing_kwargs:
   use_reentrant: false
 hub_model_id: openPangu-Embedded-1B-CodeIOI-GRPO
 hub_strategy: every_save
+hub_private_repo: true
 learning_rate: 5.0e-06
 log_completions: true
 log_level: info
