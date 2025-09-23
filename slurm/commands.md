@@ -2,19 +2,32 @@
 
 ```shell
 sbatch \
-  --job-name="debug-openPangu-distill" \
+  --job-name="openPangu-distill" \
   --nodes=1 \
-  --partition="agentS-long" \
-  --time="1-12:00:00" \
+  --partition="agentS-xlong" \
+  --time="5-00:00:00" \
   --gres="gpu:h200:2" \
   --ntasks-per-node=1 \
   slurm/train.slurm \
       --model "openPangu-Embedded-1B" \
       --task "sft" \
-      --config "distill_debug" \
-      --accelerator "zero2_debug" \
+      --config "distill" \
+      --accelerator "zero2" \
       --dp 2 \
-      --args "--run_name=debug-openPangu-distill"
+      --args "--run_name=openPangu-distill"
+```
+
+Or from an interactive session
+
+```bash
+export WANDB_PROJECT="open-r1"
+export NCCL_ASYNC_ERROR_HANDLING=1
+ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
+    --config_file recipes/accelerate_configs/zero2_debug.yaml \
+    --gradient_accumulation_steps 32 \
+    src/open_r1/sft.py \
+        --config recipes/openPangu-Embedded-1B/sft/config_distill_debug.yaml \
+        --run_name=debug-openPangu-distill
 ```
 
 # GRPO

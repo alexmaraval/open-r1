@@ -74,32 +74,38 @@ def get_dataset(args: ScriptArguments) -> DatasetDict:
     Returns:
         DatasetDict: The loaded datasets.
     """
+
     def maybe_debug_sample(ds, seed=None):
         """If debug_run is enabled, select only 5% of the dataset."""
-        if getattr(args, "debug_run", False):
+        if getattr(args, 'debug_run', False):
             sample_size = max(1, int(len(ds) * 0.01))
             ds = ds.shuffle(seed=seed).select(range(sample_size))
-            logger.info(f"Debug run enabled: reduced dataset to {len(ds)} examples (5%)")
+            logger.info(f'Debug run enabled: reduced dataset to {len(ds)} examples (5%)')
         return ds
 
     if args.dataset_name and not args.dataset_mixture:
-        logger.info(f"Loading dataset: {args.dataset_name}")
+        logger.info(f'Loading dataset: {args.dataset_name}')
         ds = datasets.load_dataset(args.dataset_name, args.dataset_config)
         if isinstance(ds, DatasetDict):
-            return DatasetDict({
-                split: maybe_debug_sample(subset, seed=args.dataset_mixture.seed if args.dataset_mixture else None)
-                for split, subset in ds.items()
-            })
+            return DatasetDict(
+                {
+                    split: maybe_debug_sample(
+                        subset,
+                        seed=args.dataset_mixture.seed if args.dataset_mixture else None,
+                    )
+                    for split, subset in ds.items()
+                }
+            )
         else:
-            return DatasetDict({"train": maybe_debug_sample(ds)})
+            return DatasetDict({'train': maybe_debug_sample(ds)})
 
     elif args.dataset_mixture:
-        logger.info(f"Creating dataset mixture with {len(args.dataset_mixture.datasets)} datasets")
+        logger.info(f'Creating dataset mixture with {len(args.dataset_mixture.datasets)} datasets')
         seed = args.dataset_mixture.seed
         datasets_list = []
 
         for dataset_config in args.dataset_mixture.datasets:
-            logger.info(f"Loading dataset for mixture: {dataset_config.id} (config: {dataset_config.config})")
+            logger.info(f'Loading dataset for mixture: {dataset_config.id} (config: {dataset_config.config})')
             ds = datasets.load_dataset(
                 dataset_config.id,
                 dataset_config.config,
@@ -119,20 +125,20 @@ def get_dataset(args: ScriptArguments) -> DatasetDict:
         if datasets_list:
             combined_dataset = concatenate_datasets(datasets_list)
             combined_dataset = combined_dataset.shuffle(seed=seed)
-            logger.info(f"Created dataset mixture with {len(combined_dataset)} examples")
+            logger.info(f'Created dataset mixture with {len(combined_dataset)} examples')
 
             if args.dataset_mixture.test_split_size is not None:
                 combined_dataset = combined_dataset.train_test_split(
                     test_size=args.dataset_mixture.test_split_size, seed=seed
                 )
                 logger.info(
-                    f"Split dataset into train and test sets with test size: {args.dataset_mixture.test_split_size}"
+                    f'Split dataset into train and test sets with test size: {args.dataset_mixture.test_split_size}'
                 )
                 return combined_dataset
             else:
-                return DatasetDict({"train": combined_dataset})
+                return DatasetDict({'train': combined_dataset})
         else:
-            raise ValueError("No datasets were loaded from the mixture configuration")
+            raise ValueError('No datasets were loaded from the mixture configuration')
 
     else:
-        raise ValueError("Either `dataset_name` or `dataset_mixture` must be provided")
+        raise ValueError('Either `dataset_name` or `dataset_mixture` must be provided')

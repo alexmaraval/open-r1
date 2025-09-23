@@ -17,7 +17,7 @@ import argparse
 import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
-from typing import  Optional
+from typing import Optional
 from fastapi import FastAPI, Request
 import argparse
 import asyncio
@@ -29,6 +29,7 @@ from e2b_code_interpreter import AsyncSandbox
 
 load_dotenv()
 
+
 class BatchRequest(BaseModel):
     """
     BatchRequest is a data model representing a batch processing request.
@@ -39,30 +40,34 @@ class BatchRequest(BaseModel):
         timeout (int): The maximum allowed execution time for each script in seconds.
         request_timeout (int): The maximum allowed time for the entire batch request in seconds.
     """
+
     scripts: list[str]
     languages: list[str]
     timeout: int
     request_timeout: int
 
+
 class ScriptResult(BaseModel):
     """
     ScriptResult is a Pydantic model that represents the result of a script execution.
     Attributes:
-        execution (Optional[Execution]): An optional instance of the `Execution` class 
-            that contains details about the script's execution, such as status, output, 
+        execution (Optional[Execution]): An optional instance of the `Execution` class
+            that contains details about the script's execution, such as status, output,
             or any other relevant metadata.
-        exception_str (Optional[str]): An optional string that captures the exception 
+        exception_str (Optional[str]): An optional string that captures the exception
             message or details if an error occurred during the script's execution.
-        model_config (ConfigDict): A configuration dictionary that allows arbitrary 
-            types to be used within the Pydantic model. This is necessary to support 
+        model_config (ConfigDict): A configuration dictionary that allows arbitrary
+            types to be used within the Pydantic model. This is necessary to support
             custom types like `Execution` within the model.
     """
+
     execution: Optional[Execution]
     exception_str: Optional[str]
-    
+
     # required to allow arbitrary types in pydantic models such as Execution
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
+
 def create_app(args):
     """
     Creates and configures a FastAPI application instance.
@@ -95,20 +100,19 @@ def create_app(args):
     # Instantiate semaphore and attach it to app state
     app.state.sandbox_semaphore = asyncio.Semaphore(args.max_num_sandboxes)
 
-    @app.get("/health")
+    @app.get('/health')
     async def health():
-        return {"status": "ok"}
+        return {'status': 'ok'}
 
-    @app.post("/execute_batch")
+    @app.post('/execute_batch')
     async def execute_batch(batch: BatchRequest, request: Request):
         semaphore = request.app.state.sandbox_semaphore
         languages = batch.languages
         timeout = batch.timeout
         request_timeout = batch.request_timeout
         asyncio_timeout = batch.timeout + 1
-        
-        async def run_script(script: str, language: str) -> ScriptResult:
 
+        async def run_script(script: str, language: str) -> ScriptResult:
             async with semaphore:
                 try:
                     sandbox = await AsyncSandbox.create(
@@ -123,7 +127,7 @@ def create_app(args):
 
                 except Exception as e:
                     return ScriptResult(execution=None, exception_str=str(e))
-                
+
                 finally:
                     try:
                         await sandbox.kill()
@@ -149,12 +153,13 @@ def parse_args():
         argparse.Namespace: Parsed command-line arguments as an object.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--max_num_sandboxes", type=int, default=20)
+    parser.add_argument('--host', default='0.0.0.0')
+    parser.add_argument('--port', type=int, default=8000)
+    parser.add_argument('--max_num_sandboxes', type=int, default=20)
     return parser.parse_args()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     args = parse_args()
     app = create_app(args)
 

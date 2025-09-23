@@ -2,6 +2,7 @@ import argparse
 from transformers import AutoConfig
 from math import gcd
 
+
 def get_tensor_parallel_size(model_name: str, revision: str = None, default_tp: int = 8) -> int:
     try:
         config = AutoConfig.from_pretrained(model_name, revision=revision, trust_remote_code=True)
@@ -13,14 +14,20 @@ def get_tensor_parallel_size(model_name: str, revision: str = None, default_tp: 
         else:
             return default_tp
     except Exception as e:
-        print(f"Warning: Failed to fetch config for {model_name}@{revision}: {e}")
+        print(f'Warning: Failed to fetch config for {model_name}@{revision}: {e}')
         return default_tp
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name", type=str, required=True, help="Hugging Face model name or path")
-    parser.add_argument("--revision", type=str, default=None, help="Model revision if applicable")
-    parser.add_argument("--default_tp", type=int, default=8, help="Default TP size (usually GPUs per node)")
+    parser.add_argument('--model_name', type=str, required=True, help='Hugging Face model name or path')
+    parser.add_argument('--revision', type=str, default=None, help='Model revision if applicable')
+    parser.add_argument(
+        '--default_tp',
+        type=int,
+        default=8,
+        help='Default TP size (usually GPUs per node)',
+    )
 
     args = parser.parse_args()
 

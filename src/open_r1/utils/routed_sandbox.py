@@ -65,44 +65,44 @@ class RoutedSandbox:
 
         # Default to Python for all scripts if languages is not provided
         if languages is None:
-            languages = ["python"] * len(scripts)
+            languages = ['python'] * len(scripts)
 
         # Prepare the payload for the HTTP POST request
         payload = {
-            "scripts": scripts,
-            "languages": languages,
-            "timeout": timeout,
-            "request_timeout": request_timeout,
+            'scripts': scripts,
+            'languages': languages,
+            'timeout': timeout,
+            'request_timeout': request_timeout,
         }
 
         # Send the request to the E2B Router
-        response = requests.post(f"http://{self.router_url}/execute_batch", json=payload)
+        response = requests.post(f'http://{self.router_url}/execute_batch', json=payload)
         if not response.ok:
-            print(f"Request failed with status code: {response.status_code}")
+            print(f'Request failed with status code: {response.status_code}')
 
         # Parse the response and construct Execution objects
         results = response.json()
         output = []
         for result in results:
-            if result["execution"] is None:
+            if result['execution'] is None:
                 # If execution is None, create an empty Execution object
                 # This can happen when a script times out or fails to execute
                 execution = Execution()
             else:
                 execution = Execution(
-                    results=[Result(**r) for r in result["execution"]["results"]],
-                    logs=result["execution"]["logs"],
-                    error=(ExecutionError(**result["execution"]["error"]) if result["execution"]["error"] else None),
-                    execution_count=result["execution"]["execution_count"],
+                    results=[Result(**r) for r in result['execution']['results']],
+                    logs=result['execution']['logs'],
+                    error=(ExecutionError(**result['execution']['error']) if result['execution']['error'] else None),
+                    execution_count=result['execution']['execution_count'],
                 )
             output.append(execution)
 
         return output
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # for local testing launch an E2B router with: python scripts/e2b_router.py
-    sbx = RoutedSandbox(router_url="0.0.0.0:8000")
+    sbx = RoutedSandbox(router_url='0.0.0.0:8000')
     codes = ["print('hello world')", "print('hello world)"]
     executions = sbx.run_code(codes)  # Execute Python inside the sandbox
 

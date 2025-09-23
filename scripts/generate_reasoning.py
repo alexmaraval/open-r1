@@ -24,19 +24,19 @@ async def generate_completion(session, prompt, args):
         try:
             await asyncio.sleep(random.uniform(0.0, 0.1))
             async with session.post(
-                f"http://{args.api_addr}/v1/chat/completions",
+                f'http://{args.api_addr}/v1/chat/completions',
                 json={
-                    "model": "default",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": args.max_tokens,
-                    "temperature": args.temperature,
-                    "top_p": args.top_p,
+                    'model': 'default',
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'max_tokens': args.max_tokens,
+                    'temperature': args.temperature,
+                    'top_p': args.top_p,
                 },
-                headers={"Authorization": "Bearer EMPTY"},
+                headers={'Authorization': 'Bearer EMPTY'},
             ) as response:
                 return await response.json(content_type=None)
         except Exception as e:
-            print(f"API error (will retry): {e}")
+            print(f'API error (will retry): {e}')
             retry_budget -= 1
             await asyncio.sleep(10)
     return None
@@ -51,7 +51,7 @@ async def process_example(example, session, args, output_file, pbar):
         completions = await asyncio.gather(*tasks)
 
         if any(completion is None for completion in completions):
-            print(f"Error processing example")
+            print(f'Error processing example')
             pbar.update(1)
             return None
 
@@ -60,22 +60,22 @@ async def process_example(example, session, args, output_file, pbar):
         api_metadata = []
 
         for completion in completions:
-            generations.append(completion["choices"][0]["message"]["content"])
-            finish_reasons.append(completion["choices"][0]["finish_reason"])
-            api_metadata.append(completion["usage"])
+            generations.append(completion['choices'][0]['message']['content'])
+            finish_reasons.append(completion['choices'][0]['finish_reason'])
+            api_metadata.append(completion['usage'])
 
         # Combine original dataset fields with generations
         result = {
             **example,  # Preserve all original dataset fields
-            "generations": generations,
-            "finish_reasons": finish_reasons,
-            "api_metadata": api_metadata,
+            'generations': generations,
+            'finish_reasons': finish_reasons,
+            'api_metadata': api_metadata,
         }
 
         # Write to file with lock
         async with file_lock:
-            async with aiofiles.open(output_file, mode="a") as f:
-                await f.write(json.dumps(result) + "\n")
+            async with aiofiles.open(output_file, mode='a') as f:
+                await f.write(json.dumps(result) + '\n')
                 await f.flush()
 
         pbar.set_postfix(active=len(pbar.active_tasks), refresh=False)
@@ -83,7 +83,7 @@ async def process_example(example, session, args, output_file, pbar):
 
         return result
     except Exception as e:
-        print(f"Error processing example: {e}")
+        print(f'Error processing example: {e}')
         pbar.update(1)
         return None
 
@@ -91,7 +91,7 @@ async def process_example(example, session, args, output_file, pbar):
 async def load_processed_uuids(output_file, uuid_column):
     processed_uuids = set()
     if os.path.exists(output_file):
-        async with aiofiles.open(output_file, mode="r") as f:
+        async with aiofiles.open(output_file, mode='r') as f:
             async for line in f:
                 try:
                     data = json.loads(line)
@@ -103,38 +103,38 @@ async def load_processed_uuids(output_file, uuid_column):
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset-name", type=str, required=True)
-    parser.add_argument("--output-file", type=str, required=True)
-    parser.add_argument("--prompt-column", type=str, required=True)
-    parser.add_argument("--uuid-column", type=str, required=True)
-    parser.add_argument("--api-addr", type=str, default="localhost:39876")
-    parser.add_argument("--num-generations", type=int, default=4)
+    parser.add_argument('--dataset-name', type=str, required=True)
+    parser.add_argument('--output-file', type=str, required=True)
+    parser.add_argument('--prompt-column', type=str, required=True)
+    parser.add_argument('--uuid-column', type=str, required=True)
+    parser.add_argument('--api-addr', type=str, default='localhost:39876')
+    parser.add_argument('--num-generations', type=int, default=4)
     parser.add_argument(
-        "--prompt-template",
+        '--prompt-template',
         type=str,
-        default="You will be given a problem. Please reason step by step, and put your final answer within \\boxed{{}}:\n{prompt}",
+        default='You will be given a problem. Please reason step by step, and put your final answer within \\boxed{{}}:\n{prompt}',
     )
-    parser.add_argument("--temperature", type=float, default=0.6)
-    parser.add_argument("--top-p", type=float, default=0.95)
-    parser.add_argument("--max-tokens", type=int, default=16384)
-    parser.add_argument("--max-concurrent", type=int, default=1000)
+    parser.add_argument('--temperature', type=float, default=0.6)
+    parser.add_argument('--top-p', type=float, default=0.95)
+    parser.add_argument('--max-tokens', type=int, default=16384)
+    parser.add_argument('--max-concurrent', type=int, default=1000)
     args = parser.parse_args()
 
-    dataset = load_dataset(args.dataset_name, split="train").shuffle()
+    dataset = load_dataset(args.dataset_name, split='train').shuffle()
     processed_uuids = await load_processed_uuids(args.output_file, args.uuid_column)
     if processed_uuids:
-        print(f"Found {len(processed_uuids)} already processed examples, resuming from there...")
+        print(f'Found {len(processed_uuids)} already processed examples, resuming from there...')
 
     if not os.path.exists(args.output_file):
-        async with aiofiles.open(args.output_file, mode="w") as f:
-            await f.write("")
+        async with aiofiles.open(args.output_file, mode='w') as f:
+            await f.write('')
 
     active_tasks: Set[asyncio.Task] = set()
 
     pbar = tqdm(
         total=len(dataset) - len(processed_uuids),
-        desc="Generating responses",
-        unit="row",
+        desc='Generating responses',
+        unit='row',
         mininterval=2,
         smoothing=0.0001,
     )
@@ -154,7 +154,7 @@ async def main():
                         try:
                             await task
                         except Exception as e:
-                            print(f"Task failed: {e}")
+                            print(f'Task failed: {e}')
 
                 task = asyncio.create_task(process_example(example, session, args, args.output_file, pbar))
                 active_tasks.add(task)
@@ -169,6 +169,6 @@ async def main():
     pbar.close()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     uvloop.install()
     asyncio.run(main())

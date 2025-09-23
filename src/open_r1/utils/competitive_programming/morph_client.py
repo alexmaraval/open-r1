@@ -19,8 +19,8 @@ else:
 
 
 # Silence verbose logs from dependencies
-logging.getLogger("paramiko").setLevel(logging.ERROR)
-logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger('paramiko').setLevel(logging.ERROR)
+logging.getLogger('httpx').setLevel(logging.ERROR)
 
 
 class MorphCloudError(Exception):
@@ -71,7 +71,7 @@ class MorphCloudExecutionClient:
             await instance.await_until_ready(timeout=300)
             return instance
         except asyncio.TimeoutError as e:
-            print(f"Timeout while preparing instance: {str(e)}")
+            print(f'Timeout while preparing instance: {str(e)}')
             if instance:
                 try:
                     await instance.astop()
@@ -96,43 +96,43 @@ class MorphCloudExecutionClient:
         # Extract problem ID
         problem_id = None
         graders_files = []
-        for file in data["files"]:
-            if file["name"].startswith("graders/") and file["name"].endswith(".cpp"):
-                potential_id = os.path.basename(file["name"]).split(".")[0]
-                if potential_id not in ["grader", "manager", "stub"]:
+        for file in data['files']:
+            if file['name'].startswith('graders/') and file['name'].endswith('.cpp'):
+                potential_id = os.path.basename(file['name']).split('.')[0]
+                if potential_id not in ['grader', 'manager', 'stub']:
                     problem_id = potential_id
 
-            if file["name"].startswith("graders/"):
+            if file['name'].startswith('graders/'):
                 graders_files.append(file)
 
         if not problem_id:
-            raise ValueError("Could not determine problem ID from files")
+            raise ValueError('Could not determine problem ID from files')
 
         grader_config = {
-            "task_type": "Batch",
-            "code": problem_id,
-            "time_limit": data["run_timeout"] / 1000,
-            "memory_limit": data["run_memory_limit"] * 1024 * 1024,
+            'task_type': 'Batch',
+            'code': problem_id,
+            'time_limit': data['run_timeout'] / 1000,
+            'memory_limit': data['run_memory_limit'] * 1024 * 1024,
         }
 
         for file in graders_files:
-            if "manager.cpp" in file["name"]:
-                grader_config["task_type"] = "Communication"
-                grader_config["task_type_parameters_Communication_num_processes"] = 1
-                grader_config["task_type_parameters_Communication_user_io"] = "std_io"
+            if 'manager.cpp' in file['name']:
+                grader_config['task_type'] = 'Communication'
+                grader_config['task_type_parameters_Communication_num_processes'] = 1
+                grader_config['task_type_parameters_Communication_user_io'] = 'std_io'
                 break
 
-        config_path = os.path.join(temp_dir, "grader_config.json")
-        with open(config_path, "w") as f:
+        config_path = os.path.join(temp_dir, 'grader_config.json')
+        with open(config_path, 'w') as f:
             json.dump(grader_config, f)
 
-        local_files = {"grader_config.json": config_path}
+        local_files = {'grader_config.json': config_path}
 
-        for file in data["files"]:
-            local_path = os.path.join(temp_dir, os.path.basename(file["name"]))
-            with open(local_path, "w") as f:
-                f.write(file["content"])
-            local_files[file["name"]] = local_path
+        for file in data['files']:
+            local_path = os.path.join(temp_dir, os.path.basename(file['name']))
+            with open(local_path, 'w') as f:
+                f.write(file['content'])
+            local_files[file['name']] = local_path
 
         return problem_id, grader_config, local_files
 
@@ -151,15 +151,15 @@ class MorphCloudExecutionClient:
             TimeoutError: If uploads time out
         """
         for remote_name, local_path in local_files.items():
-            target_path = f"/workspace/{remote_name}"
+            target_path = f'/workspace/{remote_name}'
             dir_path = os.path.dirname(target_path)
 
-            if dir_path != "/workspace":
-                await instance.aexec(f"mkdir -p {dir_path}")
+            if dir_path != '/workspace':
+                await instance.aexec(f'mkdir -p {dir_path}')
 
             await instance.aupload(local_path, target_path)
 
-        await instance.aupload(local_files["grader_config.json"], "/workspace/graders/grader_config.json")
+        await instance.aupload(local_files['grader_config.json'], '/workspace/graders/grader_config.json')
 
         return True
 
@@ -176,10 +176,10 @@ class MorphCloudExecutionClient:
         Raises:
             RuntimeError: If compilation fails
         """
-        compile_result = await instance.aexec("cd /workspace && ./compile")
+        compile_result = await instance.aexec('cd /workspace && ./compile')
 
         if compile_result.exit_code != 0:
-            raise RuntimeError(f"Compilation error exit code {compile_result.exit_code}\n{compile_result.stderr}")
+            raise RuntimeError(f'Compilation error exit code {compile_result.exit_code}\n{compile_result.stderr}')
 
         return compile_result
 
@@ -197,27 +197,27 @@ class MorphCloudExecutionClient:
         Raises:
             TimeoutError: If test execution times out
         """
-        hard_timeout = data["run_timeout"] / 1000 + 3
-        run_command = f"cd /workspace && timeout {hard_timeout}s ./run"
+        hard_timeout = data['run_timeout'] / 1000 + 3
+        run_command = f'cd /workspace && timeout {hard_timeout}s ./run'
 
         run_result = await instance.aexec(run_command)
 
         if run_result.exit_code == 124 or run_result.exit_code == 137 or run_result.exit_code == 143:
-            return "0", "Time limit exceeded"
+            return '0', 'Time limit exceeded'
 
-        if run_result.exit_code != 0 and "Memory limit exceeded" in run_result.stderr:
-            return "0", "Memory limit exceeded"
+        if run_result.exit_code != 0 and 'Memory limit exceeded' in run_result.stderr:
+            return '0', 'Memory limit exceeded'
 
         if run_result.stdout:
             return run_result.stdout.strip(), run_result.stderr.strip()
 
         if run_result.exit_code != 0:
             return (
-                "0",
-                f"Runtime error with exit code {run_result.exit_code}\n{run_result.stderr}",
+                '0',
+                f'Runtime error with exit code {run_result.exit_code}\n{run_result.stderr}',
             )
 
-        return "0", "Unknown error"
+        return '0', 'Unknown error'
 
     async def _execute_with_instance(self, instance: Instance, data: Dict[str, Any], temp_dir: str) -> Tuple[str, str]:
         """Execute code using a prepared instance.
@@ -242,7 +242,7 @@ class MorphCloudExecutionClient:
         try:
             await self._compile_code(instance)
         except RuntimeError as e:
-            return "0", str(e)
+            return '0', str(e)
 
         score, feedback = await self._run_tests(instance, data)
         return score, feedback
@@ -266,7 +266,7 @@ class MorphCloudExecutionClient:
         # INSTANCE_TIMEOUT = 300  # 5 minutes for instance operations
         TOTAL_EXECUTION_TIMEOUT = 600  # 10 minutes total execution time
 
-        with tempfile.TemporaryDirectory(prefix="morph_exec_") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix='morph_exec_') as temp_dir:
             snapshot = await self._get_or_create_base_snapshot()
             instance = await self.client.instances.astart(
                 snapshot.id, ttl_seconds=600
@@ -317,9 +317,9 @@ class MorphCloudExecutionClient:
 
             except asyncio.TimeoutError:
                 if attempt < max_retries:
-                    print(f"Execution timed out, retrying ({attempt + 1}/{max_retries})")
+                    print(f'Execution timed out, retrying ({attempt + 1}/{max_retries})')
                 else:
-                    return "0", "Execution timed out after multiple retries"
+                    return '0', 'Execution timed out after multiple retries'
 
             except Exception as e:
                 # Calculate exponential backoff
@@ -327,28 +327,28 @@ class MorphCloudExecutionClient:
                     retry_delay = min(base_delay * (2**attempt), 30)  # Exponential backoff, capped at 30 seconds
 
                     print(
-                        f"Execution failed with {type(e).__name__}: {str(e)}, retrying in {retry_delay:.2f}s ({attempt + 1}/{max_retries})"
+                        f'Execution failed with {type(e).__name__}: {str(e)}, retrying in {retry_delay:.2f}s ({attempt + 1}/{max_retries})'
                     )
                     await asyncio.sleep(retry_delay)
                 else:
-                    print(f"Execution failed after {max_retries} retries: {type(e).__name__}: {str(e)}")
-                    return "0", f"Execution failed after multiple retries: {str(e)}"
+                    print(f'Execution failed after {max_retries} retries: {type(e).__name__}: {str(e)}')
+                    return '0', f'Execution failed after multiple retries: {str(e)}'
 
     async def _get_or_create_base_snapshot(self):
         """Get or create a snapshot with the necessary dependencies and scripts for evaluation."""
 
         async with self._snapshot_lock:
-            base_snapshots = await self.client.snapshots.alist(digest="ioi-evaluation-morph")
+            base_snapshots = await self.client.snapshots.alist(digest='ioi-evaluation-morph')
 
             if not base_snapshots:
-                print("Creating base snapshot with build-essential cmake and g++")
+                print('Creating base snapshot with build-essential cmake and g++')
 
                 # Create base snapshot with minimal specs
                 base_snapshot = await self.client.snapshots.acreate(
                     vcpus=2,
                     memory=4096,
                     disk_size=10240,
-                    metadata={"purpose": "ioi_evaluation"},
+                    metadata={'purpose': 'ioi_evaluation'},
                 )
 
                 # Start a temporary instance from the base snapshot
@@ -365,36 +365,36 @@ class MorphCloudExecutionClient:
                     run_script = await self._get_run_script()
 
                     # Use temporary directory to store scripts
-                    with tempfile.TemporaryDirectory(prefix="morph_setup_") as temp_dir:
+                    with tempfile.TemporaryDirectory(prefix='morph_setup_') as temp_dir:
                         # Create paths for script files
-                        compile_path = os.path.join(temp_dir, "compile.sh")
-                        run_path = os.path.join(temp_dir, "run.sh")
+                        compile_path = os.path.join(temp_dir, 'compile.sh')
+                        run_path = os.path.join(temp_dir, 'run.sh')
 
                         # Write scripts to temp files
-                        with open(compile_path, "w") as f:
+                        with open(compile_path, 'w') as f:
                             f.write(compile_script)
 
-                        with open(run_path, "w") as f:
+                        with open(run_path, 'w') as f:
                             f.write(run_script)
 
                         async with temp_instance:
                             # Install dependencies
-                            await temp_instance.aexec("apt-get update && apt-get install -y build-essential cmake g++")
+                            await temp_instance.aexec('apt-get update && apt-get install -y build-essential cmake g++')
 
                             # Create workspace directory
                             await temp_instance.aexec(
-                                "mkdir -p /workspace && mkdir -p /workspace/graders && chmod 777 /workspace"
+                                'mkdir -p /workspace && mkdir -p /workspace/graders && chmod 777 /workspace'
                             )
 
                             # Upload scripts to instance
-                            await temp_instance.aupload(compile_path, "/workspace/compile")
-                            await temp_instance.aupload(run_path, "/workspace/run")
+                            await temp_instance.aupload(compile_path, '/workspace/compile')
+                            await temp_instance.aupload(run_path, '/workspace/run')
 
                             # Make scripts executable
-                            await temp_instance.aexec("chmod +x /workspace/compile /workspace/run")
+                            await temp_instance.aexec('chmod +x /workspace/compile /workspace/run')
 
                             # Create snapshot from the prepared instance
-                            final_snapshot = await temp_instance.asnapshot(digest="ioi-evaluation-morph")
+                            final_snapshot = await temp_instance.asnapshot(digest='ioi-evaluation-morph')
 
                 except Exception as e:
                     # Ensure instance is stopped if anything fails
@@ -727,14 +727,14 @@ def get_morph_client_from_env(session=None) -> MorphCloudExecutionClient:
     """
     if not is_morph_available():
         raise ImportError(
-            "MorphCloud is not available and required for this function. Please install MorphCloud with "
-            "`pip install morphcloud` and add an API key to a `.env` file."
+            'MorphCloud is not available and required for this function. Please install MorphCloud with '
+            '`pip install morphcloud` and add an API key to a `.env` file.'
         )
 
     load_dotenv()
-    api_key = os.environ.get("MORPH_API_KEY")
+    api_key = os.environ.get('MORPH_API_KEY')
     if not api_key:
-        raise ValueError("MORPH_API_KEY environment variable is required")
+        raise ValueError('MORPH_API_KEY environment variable is required')
 
     return MorphCloudExecutionClient(api_key=api_key)
 

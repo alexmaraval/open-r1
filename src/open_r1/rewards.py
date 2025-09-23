@@ -39,12 +39,12 @@ from .utils.competitive_programming import score_subtask
 
 def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str], **kwargs) -> list[Optional[float]]:
     """Reward function that checks if the completion is the same as the ground truth."""
-    contents = [completion[0]["content"] for completion in completions]
+    contents = [completion[0]['content'] for completion in completions]
     rewards = []
     for content, sol in zip(contents, solution):
         gold_parsed = parse(
             sol,
-            extraction_mode="first_match",
+            extraction_mode='first_match',
         )
         if len(gold_parsed) != 0:
             # We require the answer to be provided in correct latex (no malformed operators)
@@ -57,7 +57,7 @@ def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str]
                             malformed_operators=False,
                             basic_latex=True,
                             equations=True,
-                            boxed="all",
+                            boxed='all',
                             units=True,
                         ),
                         # Ensures that boxed is tried first
@@ -65,18 +65,18 @@ def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str]
                         try_extract_without_anchor=False,
                     )
                 ],
-                extraction_mode="first_match",
+                extraction_mode='first_match',
             )
             # Compute binary rewards if verifiable, `None` otherwise to skip this example
             try:
                 reward = float(verify(gold_parsed, answer_parsed))
             except Exception as e:
-                print(f"verify failed: {e}, answer: {answer_parsed}, gold: {gold_parsed}")
+                print(f'verify failed: {e}, answer: {answer_parsed}, gold: {gold_parsed}')
                 reward = None
         else:
             # If the gold solution is not parseable, we assign `None` to skip this example
             reward = None
-            print("Failed to parse gold solution: ", sol)
+            print('Failed to parse gold solution: ', sol)
         rewards.append(reward)
 
     return rewards
@@ -84,8 +84,8 @@ def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str]
 
 def format_reward(completions, **kwargs):
     """Reward function that checks if the reasoning process is enclosed within <think> and </think> tags, while the final answer is enclosed within <answer> and </answer> tags."""
-    pattern = r"^<think>\n.*?\n</think>\n<answer>\n.*?\n</answer>$"
-    completion_contents = [completion[0]["content"] for completion in completions]
+    pattern = r'^<think>\n.*?\n</think>\n<answer>\n.*?\n</answer>$'
+    completion_contents = [completion[0]['content'] for completion in completions]
     matches = [re.match(pattern, content, re.DOTALL | re.MULTILINE) for content in completion_contents]
     return [1.0 if match else 0.0 for match in matches]
 
@@ -98,17 +98,17 @@ def tag_count_reward(completions, **kwargs) -> list[float]:
 
     def count_tags(text: str) -> float:
         count = 0.0
-        if text.count("<think>\n") == 1:
+        if text.count('<think>\n') == 1:
             count += 0.25
-        if text.count("\n</think>\n") == 1:
+        if text.count('\n</think>\n') == 1:
             count += 0.25
-        if text.count("\n<answer>\n") == 1:
+        if text.count('\n<answer>\n') == 1:
             count += 0.25
-        if text.count("\n</answer>") == 1:
+        if text.count('\n</answer>') == 1:
             count += 0.25
         return count
 
-    contents = [completion[0]["content"] for completion in completions]
+    contents = [completion[0]['content'] for completion in completions]
     return [count_tags(c) for c in contents]
 
 
@@ -121,8 +121,8 @@ def reasoning_steps_reward(completions, **kwargs):
         \n\* - matches bullet points with asterisks
         First,|Second,|Next,|Finally, - matches transition words
     """
-    pattern = r"(Step \d+:|^\d+\.|\n-|\n\*|First,|Second,|Next,|Finally,)"
-    completion_contents = [completion[0]["content"] for completion in completions]
+    pattern = r'(Step \d+:|^\d+\.|\n-|\n\*|First,|Second,|Next,|Finally,)'
+    completion_contents = [completion[0]['content'] for completion in completions]
     matches = [len(re.findall(pattern, content)) for content in completion_contents]
 
     # Magic number 3 to encourage 3 steps and more, otherwise partial reward
@@ -143,20 +143,20 @@ def len_reward(completions: list[Dict[str, str]], solution: list[str], **kwargs)
         - For correct answers: reward = 0.5 - (len - min_len)/(max_len - min_len)
         - For incorrect answers: reward = min(0, 0.5 - (len - min_len)/(max_len - min_len))
     """
-    contents = [completion[0]["content"] for completion in completions]
+    contents = [completion[0]['content'] for completion in completions]
 
     # First check correctness of answers
     correctness = []
     for content, sol in zip(contents, solution):
         gold_parsed = parse(
             sol,
-            extraction_mode="first_match",
+            extraction_mode='first_match',
             extraction_config=[LatexExtractionConfig()],
         )
         if len(gold_parsed) == 0:
             # Skip unparseable examples
             correctness.append(True)  # Treat as correct to avoid penalizing
-            print("Failed to parse gold solution: ", sol)
+            print('Failed to parse gold solution: ', sol)
             continue
 
         answer_parsed = parse(
@@ -175,7 +175,7 @@ def len_reward(completions: list[Dict[str, str]], solution: list[str], **kwargs)
                     try_extract_without_anchor=False,
                 )
             ],
-            extraction_mode="first_match",
+            extraction_mode='first_match',
         )
         correctness.append(verify(answer_parsed, gold_parsed))
 
@@ -226,18 +226,18 @@ def get_cosine_scaled_reward(
             max_value_correct: Maximum reward for correct answers
             max_len: Maximum length for scaling
         """
-        contents = [completion[0]["content"] for completion in completions]
+        contents = [completion[0]['content'] for completion in completions]
         rewards = []
 
         for content, sol in zip(contents, solution):
             gold_parsed = parse(
                 sol,
-                extraction_mode="first_match",
+                extraction_mode='first_match',
                 extraction_config=[LatexExtractionConfig()],
             )
             if len(gold_parsed) == 0:
                 rewards.append(1.0)  # Skip unparseable examples
-                print("Failed to parse gold solution: ", sol)
+                print('Failed to parse gold solution: ', sol)
                 continue
 
             answer_parsed = parse(
@@ -256,7 +256,7 @@ def get_cosine_scaled_reward(
                         try_extract_without_anchor=False,
                     )
                 ],
-                extraction_mode="first_match",
+                extraction_mode='first_match',
             )
 
             is_correct = verify(answer_parsed, gold_parsed)
@@ -282,7 +282,7 @@ def get_cosine_scaled_reward(
     return cosine_scaled_reward
 
 
-def get_repetition_penalty_reward(ngram_size: int, max_penalty: float, language: str = "en"):
+def get_repetition_penalty_reward(ngram_size: int, max_penalty: float, language: str = 'en'):
     """
     Computes N-gram repetition penalty as described in Appendix C.2 of https://huggingface.co/papers/2502.03373.
     Reference implementation from: https://github.com/eddycmu/demystify-long-cot/blob/release/openrlhf/openrlhf/reward/repetition.py
@@ -293,19 +293,19 @@ def get_repetition_penalty_reward(ngram_size: int, max_penalty: float, language:
     language: Language of the text, defaults to `en`. Used to choose the way to split the text into n-grams.
     """
     if max_penalty > 0:
-        raise ValueError(f"max_penalty {max_penalty} should not be positive")
+        raise ValueError(f'max_penalty {max_penalty} should not be positive')
 
-    if language == "en":
+    if language == 'en':
 
         def zipngram(text: str, ngram_size: int):
             words = text.lower().split()
             return zip(*[words[i:] for i in range(ngram_size)]), words
 
-    elif language == "zh":
+    elif language == 'zh':
         from transformers.utils.import_utils import _is_package_available
 
-        if not _is_package_available("jieba"):
-            raise ValueError("Please install jieba to use Chinese language")
+        if not _is_package_available('jieba'):
+            raise ValueError('Please install jieba to use Chinese language')
 
         def zipngram(text: str, ngram_size: int):
             import jieba
@@ -315,7 +315,7 @@ def get_repetition_penalty_reward(ngram_size: int, max_penalty: float, language:
 
     else:
         raise ValueError(
-            f"Word splitting for language `{language}` is not yet implemented. Please implement your own zip-ngram function."
+            f'Word splitting for language `{language}` is not yet implemented. Please implement your own zip-ngram function.'
         )
 
     def repetition_penalty_reward(completions, **kwargs) -> float:
@@ -327,10 +327,10 @@ def get_repetition_penalty_reward(ngram_size: int, max_penalty: float, language:
             completions: List of model completions
         """
 
-        contents = [completion[0]["content"] for completion in completions]
+        contents = [completion[0]['content'] for completion in completions]
         rewards = []
         for completion in contents:
-            if completion == "":
+            if completion == '':
                 rewards.append(0.0)
                 continue
 
@@ -364,7 +364,7 @@ def _init_event_loop():
     return loop
 
 
-def ioi_code_reward(completions, test_batch_size: int = 1, provider_type: str = "piston", **kwargs) -> list[float]:
+def ioi_code_reward(completions, test_batch_size: int = 1, provider_type: str = 'piston', **kwargs) -> list[float]:
     """Reward function that evaluates IOI problems using a specified execution client.
 
     Assumes the dataset has the same format as hf.co/datasets/open-r1/ioi
@@ -377,7 +377,7 @@ def ioi_code_reward(completions, test_batch_size: int = 1, provider_type: str = 
         **kwargs: Additional arguments passed from the dataset
     """
     # Get the appropriate client based on provider_type
-    if provider_type == "morph":
+    if provider_type == 'morph':
         execution_client = get_morph_client_from_env()
     else:
         # for info on setting up piston workers, see slurm/piston/README.md
@@ -385,15 +385,15 @@ def ioi_code_reward(completions, test_batch_size: int = 1, provider_type: str = 
 
     code_snippets = [
         # note: grading is automatically skipped if no code is extracted
-        add_includes(extract_code(completion[-1]["content"], "cpp"), problem_id)
-        for completion, problem_id in zip(completions, kwargs["id"])
+        add_includes(extract_code(completion[-1]['content'], 'cpp'), problem_id)
+        for completion, problem_id in zip(completions, kwargs['id'])
     ]
 
     async def run_catch_exceptions(task):
         try:
             return await task
         except Exception as e:
-            print(f"Error from {provider_type} worker: {e}")
+            print(f'Error from {provider_type} worker: {e}')
             return SubtaskResult()
 
     problems_data = [dict(zip(kwargs.keys(), values)) for values in zip(*kwargs.values())]
@@ -421,7 +421,7 @@ def cf_code_reward(
     completions,
     test_batch_size: int = 1,
     patch_code: bool = False,
-    scoring_mode: Literal["pass_fail", "partial", "weighted_sum"] = "weighted_sum",
+    scoring_mode: Literal['pass_fail', 'partial', 'weighted_sum'] = 'weighted_sum',
     **kwargs,
 ) -> list[float]:
     """Reward function that evaluates Codeforces problems using Piston+our CF package.
@@ -433,12 +433,12 @@ def cf_code_reward(
     # for info on setting up piston workers, see slurm/piston/README.md
     piston_client = get_piston_client_from_env()
 
-    languages = kwargs["language"] if "language" in kwargs else [None] * len(completions)
+    languages = kwargs['language'] if 'language' in kwargs else [None] * len(completions)
     code_snippets = [
         # note: grading is automatically skipped if a problem has no tests
-        cf_patch_code(extract_code(completion[-1]["content"], language), language)
+        cf_patch_code(extract_code(completion[-1]['content'], language), language)
         if patch_code
-        else extract_code(completion[-1]["content"], language)
+        else extract_code(completion[-1]['content'], language)
         for completion, language in zip(completions, languages)
     ]
 
@@ -446,7 +446,7 @@ def cf_code_reward(
         try:
             return await task
         except Exception as e:
-            print(f"Error from Piston worker: {e}")
+            print(f'Error from Piston worker: {e}')
             return None
 
     # load problem data. undo separating kwargs by column
@@ -462,7 +462,7 @@ def cf_code_reward(
                     code,
                     test_batch_size=test_batch_size,
                     scoring_mode=scoring_mode,
-                    submission_language=problem_data.get("language", None),
+                    submission_language=problem_data.get('language', None),
                 )
             )
         )
@@ -473,19 +473,19 @@ def cf_code_reward(
     return results
 
 
-def extract_code(completion: str, language: str | None = "python") -> str:
+def extract_code(completion: str, language: str | None = 'python') -> str:
     if language is None:
-        return ""
-    pattern = re.compile(rf"```{language}\n(.*?)```", re.DOTALL)
+        return ''
+    pattern = re.compile(rf'```{language}\n(.*?)```', re.DOTALL)
     matches = pattern.findall(completion)
-    extracted_answer = matches[-1] if len(matches) >= 1 else ""
+    extracted_answer = matches[-1] if len(matches) >= 1 else ''
     return extracted_answer
 
 
 def binary_code_reward(
     completions,
     num_parallel: int = 2,
-    provider_type: str = "e2b",
+    provider_type: str = 'e2b',
     enforce_same_language: bool = False,
     **kwargs,
 ) -> list[float]:
@@ -511,7 +511,7 @@ def binary_code_reward(
 def code_reward(
     completions,
     num_parallel: int = 2,
-    provider_type: str = "e2b",
+    provider_type: str = 'e2b',
     enforce_same_language: bool = False,
     **kwargs,
 ) -> list[float]:
@@ -566,22 +566,22 @@ def code_reward(
     evaluate_code(code_snippet, test_cases)
     """
 
-    code_snippets = [extract_code(completion[-1]["content"]) for completion in completions]
-    verification_info = kwargs["verification_info"]
+    code_snippets = [extract_code(completion[-1]['content']) for completion in completions]
+    verification_info = kwargs['verification_info']
 
     template = evaluation_script_template
 
     scripts = [
-        template.format(code=json.dumps(code), test_cases=json.dumps(json.dumps(info["test_cases"])))
+        template.format(code=json.dumps(code), test_cases=json.dumps(json.dumps(info['test_cases'])))
         for code, info in zip(code_snippets, verification_info)
     ]
 
-    language = verification_info[0]["language"]
+    language = verification_info[0]['language']
 
     if enforce_same_language:
-        all_same_language = all(v["language"] == language for v in verification_info)
+        all_same_language = all(v['language'] == language for v in verification_info)
         if not all_same_language:
-            raise ValueError("All verification_info must have the same language", verification_info)
+            raise ValueError('All verification_info must have the same language', verification_info)
 
     execution_provider = get_provider(
         provider_type=provider_type,
@@ -589,10 +589,10 @@ def code_reward(
         **kwargs,
     )
 
-    return execution_provider.execute_scripts(scripts, ["python"] * len(scripts))
+    return execution_provider.execute_scripts(scripts, ['python'] * len(scripts))
 
 
-def get_code_format_reward(language: str = "python"):
+def get_code_format_reward(language: str = 'python'):
     """Format reward function specifically for code responses.
 
     Args:
@@ -601,12 +601,12 @@ def get_code_format_reward(language: str = "python"):
 
     def code_format_reward(completions, **kwargs):
         # if there is a language field, use it instead of the default language. This way we can have mixed language training.
-        languages = kwargs["language"] if "language" in kwargs else [language] * len(completions)
+        languages = kwargs['language'] if 'language' in kwargs else [language] * len(completions)
 
-        completion_contents = [completion[0]["content"] for completion in completions]
+        completion_contents = [completion[0]['content'] for completion in completions]
         matches = [
             re.match(
-                rf"^<think>\n.*?\n</think>\n<answer>\n.*?```{sample_language}.*?```.*?\n</answer>$",
+                rf'^<think>\n.*?\n</think>\n<answer>\n.*?```{sample_language}.*?```.*?\n</answer>$',
                 content,
                 re.DOTALL | re.MULTILINE,
             )
@@ -645,48 +645,48 @@ def get_soft_overlong_punishment(max_completion_len, soft_punish_cache):
 
 def get_reward_funcs(script_args) -> list[Callable]:
     REWARD_FUNCS_REGISTRY = {
-        "accuracy": accuracy_reward,
-        "format": format_reward,
-        "reasoning_steps": reasoning_steps_reward,
-        "cosine": get_cosine_scaled_reward(
+        'accuracy': accuracy_reward,
+        'format': format_reward,
+        'reasoning_steps': reasoning_steps_reward,
+        'cosine': get_cosine_scaled_reward(
             min_value_wrong=script_args.cosine_min_value_wrong,
             max_value_wrong=script_args.cosine_max_value_wrong,
             min_value_correct=script_args.cosine_min_value_correct,
             max_value_correct=script_args.cosine_max_value_correct,
             max_len=script_args.cosine_max_len,
         ),
-        "repetition_penalty": get_repetition_penalty_reward(
+        'repetition_penalty': get_repetition_penalty_reward(
             ngram_size=script_args.repetition_n_grams,
             max_penalty=script_args.repetition_max_penalty,
         ),
-        "length": len_reward,
-        "code": update_wrapper(
+        'length': len_reward,
+        'code': update_wrapper(
             partial(
                 code_reward,
                 num_parallel=script_args.parallel_code_exec_per_proc,
                 provider_type=script_args.code_provider,
-                enforce_same_language=getattr(script_args, "enforce_same_language", False),
+                enforce_same_language=getattr(script_args, 'enforce_same_language', False),
             ),
             code_reward,
         ),
-        "binary_code": update_wrapper(
+        'binary_code': update_wrapper(
             partial(
                 binary_code_reward,
                 num_parallel=script_args.parallel_code_exec_per_proc,
                 provider_type=script_args.code_provider,
-                enforce_same_language=getattr(script_args, "enforce_same_language", False),
+                enforce_same_language=getattr(script_args, 'enforce_same_language', False),
             ),
             binary_code_reward,
         ),
-        "ioi_code": update_wrapper(
+        'ioi_code': update_wrapper(
             partial(
                 ioi_code_reward,
                 test_batch_size=script_args.code_eval_test_batch_size,
-                provider_type=getattr(script_args, "ioi_provider", "piston"),
+                provider_type=getattr(script_args, 'ioi_provider', 'piston'),
             ),
             ioi_code_reward,
         ),
-        "cf_code": update_wrapper(
+        'cf_code': update_wrapper(
             partial(
                 cf_code_reward,
                 test_batch_size=script_args.code_eval_test_batch_size,
@@ -694,9 +694,9 @@ def get_reward_funcs(script_args) -> list[Callable]:
             ),
             cf_code_reward,
         ),
-        "code_format": get_code_format_reward(language=script_args.code_language),
-        "tag_count": tag_count_reward,
-        "soft_overlong_punishment": get_soft_overlong_punishment(
+        'code_format': get_code_format_reward(language=script_args.code_language),
+        'tag_count': tag_count_reward,
+        'soft_overlong_punishment': get_soft_overlong_punishment(
             max_completion_len=script_args.max_completion_len,
             soft_punish_cache=script_args.soft_punish_cache,
         ),

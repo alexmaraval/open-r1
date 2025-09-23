@@ -21,7 +21,7 @@ class TestResult:
 
     test_name: str
     score: float = 0.0
-    status: str = "SKIPPED"
+    status: str = 'SKIPPED'
     feedback: str = None
 
 
@@ -55,7 +55,16 @@ class SubtaskResult:
         Returns:
             str: The status with the highest priority (lowest value)
         """
-        status_prios = {"CE": -1, "RE": 0, "WA": 1, "MLE": 2, "TLE": 3, "PA": 4, "AC": 5, "SKIPPED": 999}
+        status_prios = {
+            'CE': -1,
+            'RE': 0,
+            'WA': 1,
+            'MLE': 2,
+            'TLE': 3,
+            'PA': 4,
+            'AC': 5,
+            'SKIPPED': 999,
+        }
         return min([x.status for x in self.test_results], key=lambda x: status_prios[x])
 
     @property
@@ -69,7 +78,10 @@ class SubtaskResult:
         return (
             0
             if not self.test_results
-            else round(min([test_result.score for test_result in self.test_results]), self.score_precision)
+            else round(
+                min([test_result.score for test_result in self.test_results]),
+                self.score_precision,
+            )
         )
 
     @property
@@ -84,7 +96,8 @@ class SubtaskResult:
             0
             if not self.test_results
             else round(
-                min([test_result.score for test_result in self.test_results]) * self.points, self.score_precision
+                min([test_result.score for test_result in self.test_results]) * self.points,
+                self.score_precision,
             )
         )
 
@@ -96,14 +109,14 @@ class SubtaskResult:
             dict: Dictionary containing all subtask result data
         """
         return {
-            "problem": self.problem,
-            "subtask": self.subtask,
-            "score": self.score,
-            "weighted_score": self.weighted_score,
-            "points": self.points,
-            "score_precision": self.score_precision,
-            "status": self.status,
-            "test_results": [asdict(test_result) for test_result in self.test_results],
+            'problem': self.problem,
+            'subtask': self.subtask,
+            'score': self.score,
+            'weighted_score': self.weighted_score,
+            'points': self.points,
+            'score_precision': self.score_precision,
+            'status': self.status,
+            'test_results': [asdict(test_result) for test_result in self.test_results],
         }
 
 
@@ -119,24 +132,29 @@ def _extract_single_status(score: float, feedback: str) -> str:
         str: Status code ('CE', 'MLE', 'TLE', 'WA', 'RE', 'AC', or 'PA')
     """
     if score == 0.0:
-        if "Compilation error" in feedback:
-            return "CE"
-        elif "Memory limit exceeded" in feedback:
-            return "MLE"
-        elif "Time limit exceeded" in feedback:
-            return "TLE"
+        if 'Compilation error' in feedback:
+            return 'CE'
+        elif 'Memory limit exceeded' in feedback:
+            return 'MLE'
+        elif 'Time limit exceeded' in feedback:
+            return 'TLE'
         elif "Output isn't correct" in feedback:
-            return "WA"
+            return 'WA'
         else:
-            return "RE"
+            return 'RE'
     elif score == 1.0:
-        return "AC"
+        return 'AC'
     else:
-        return "PA"
+        return 'PA'
 
 
 async def score_single_test_case(
-    client: PistonClient, subtask: dict, test_name: str, test_input: str, test_output: str, submission: str
+    client: PistonClient,
+    subtask: dict,
+    test_name: str,
+    test_input: str,
+    test_output: str,
+    submission: str,
 ) -> TestResult:
     """
     Scores a single test case by running the submission against the provided input and output.
@@ -157,7 +175,10 @@ async def score_single_test_case(
     score = float(score)
 
     return TestResult(
-        test_name=test_name, score=score, status=_extract_single_status(score, feedback), feedback=feedback
+        test_name=test_name,
+        score=score,
+        status=_extract_single_status(score, feedback),
+        feedback=feedback,
     )
 
 
@@ -183,17 +204,17 @@ async def score_subtask(
         SubtaskResult: Result of the subtask evaluation
     """
     subtask_result = SubtaskResult(
-        problem=subtask["id"],
-        subtask=subtask["subtask"],
-        points=subtask["score"],
-        score_precision=subtask["score_precision"],
+        problem=subtask['id'],
+        subtask=subtask['subtask'],
+        points=subtask['score'],
+        score_precision=subtask['score_precision'],
         test_results=[],
     )
 
     # tests that are not cached
     tests_to_run = [
         (ti, test_name)
-        for ti, test_name in enumerate(subtask["test_names"])
+        for ti, test_name in enumerate(subtask['test_names'])
         if test_case_run_cache is None or test_name not in test_case_run_cache
     ]
 
@@ -202,22 +223,22 @@ async def score_subtask(
         test_case_run_cache[test_name]
         if test_case_run_cache is not None and test_name in test_case_run_cache
         else TestResult(test_name=test_name)
-        for test_name in subtask["test_names"]
+        for test_name in subtask['test_names']
     ]
 
     # we skip submissions where no code was extracted
     # no need to do anything, as we have a failed cached result
     if not submission or any(
-        test_result.status != "SKIPPED" and test_result.score == 0.0 for test_result in subtask_result.test_results
+        test_result.status != 'SKIPPED' and test_result.score == 0.0 for test_result in subtask_result.test_results
     ):
         return subtask_result
 
-    if "test_cases" in subtask:
-        test_cases = subtask["test_cases"]
-        if isinstance(subtask["test_cases"], list):
-            test_cases = {test_name: test for test_name, test in zip(subtask["test_names"], subtask["test_cases"])}
+    if 'test_cases' in subtask:
+        test_cases = subtask['test_cases']
+        if isinstance(subtask['test_cases'], list):
+            test_cases = {test_name: test for test_name, test in zip(subtask['test_names'], subtask['test_cases'])}
     else:
-        test_cases = load_ioi_tests(subtask["year"], subtask["id"])
+        test_cases = load_ioi_tests(subtask['year'], subtask['id'])
 
     # run one batch, check if any of them failed (0 score): if so stop evaluating; otherwise continue with the next batch of test cases.
     for test_batch_to_run in batched(tests_to_run, test_batch_size):
@@ -225,7 +246,12 @@ async def score_subtask(
             *[
                 asyncio.create_task(
                     score_single_test_case(
-                        client, subtask, test_name, test_cases[test_name][0], test_cases[test_name][1], submission
+                        client,
+                        subtask,
+                        test_name,
+                        test_cases[test_name][0],
+                        test_cases[test_name][1],
+                        submission,
                     )
                 )
                 for _, test_name in test_batch_to_run
@@ -265,7 +291,11 @@ async def score_subtasks(
 
 
 async def run_submission(
-    client: PistonClient, problem: dict, test_input: str, submission: str, test_output: str | None = None
+    client: PistonClient,
+    problem: dict,
+    test_input: str,
+    submission: str,
+    test_output: str | None = None,
 ) -> tuple[str, str]:
     """
     Executes a submission against a test case using the Piston execution environment.
@@ -281,20 +311,20 @@ async def run_submission(
         tuple[str, str]: A tuple containing (score, feedback)
     """
     data = {
-        "files": [
+        'files': [
             # the actual submission
-            {"name": f"graders/{problem['id'].lower()}.cpp", "content": submission},
+            {'name': f"graders/{problem['id'].lower()}.cpp", 'content': submission},
             # pass the input
-            {"name": "input.txt", "content": test_input},
+            {'name': 'input.txt', 'content': test_input},
             # pass the expected output
-            *([{"name": "correct_output.txt", "content": test_output}] if test_output else []),
+            *([{'name': 'correct_output.txt', 'content': test_output}] if test_output else []),
             # grader files
-            *({"name": name, "content": content} for name, content in problem["grader_files"] if content),
+            *({'name': name, 'content': content} for name, content in problem['grader_files'] if content),
         ],
-        "run_timeout": round(
-            (problem["time_limit"] + 3) * 1000
+        'run_timeout': round(
+            (problem['time_limit'] + 3) * 1000
         ),  # +3 seconds hard limit. time limits are handled by the ioi script
-        "run_memory_limit": problem["memory_limit"],
+        'run_memory_limit': problem['memory_limit'],
     }
     return await execute_ioi(client, data)
 
@@ -306,30 +336,30 @@ async def execute_ioi(client, data) -> tuple[str, str]:
     """
     response = await client.send_execute(data)
 
-    if "message" in response:
-        raise PistonError(response["message"])
+    if 'message' in response:
+        raise PistonError(response['message'])
 
-    if "compile" in response and response["compile"]["code"] != 0:
-        return "0", "Compilation error exit code " + str(response["compile"]["code"]) + "\n" + response["compile"][
-            "stderr"
+    if 'compile' in response and response['compile']['code'] != 0:
+        return '0', 'Compilation error exit code ' + str(response['compile']['code']) + '\n' + response['compile'][
+            'stderr'
         ]
 
-    if "run" not in response:
+    if 'run' not in response:
         raise PistonError(response)
 
-    if response["run"]["code"] == 1 and "MemoryError" in response["run"]["stderr"]:
-        return "0", "Memory limit exceeded"
+    if response['run']['code'] == 1 and 'MemoryError' in response['run']['stderr']:
+        return '0', 'Memory limit exceeded'
 
     # successful result
-    if response["run"]["stdout"]:
-        return response["run"]["stdout"], response["run"]["stderr"]
+    if response['run']['stdout']:
+        return response['run']['stdout'], response['run']['stderr']
 
-    if response["run"]["signal"] == "SIGKILL":
-        return "0", "Time limit exceeded"
+    if response['run']['signal'] == 'SIGKILL':
+        return '0', 'Time limit exceeded'
 
     # other issues
-    if response["run"]["code"] != 0:
+    if response['run']['code'] != 0:
         raise PistonError(
             f"language={response['language']}, version={response['version']}, exit code={response['run']['code']}, stderr={response['run']['stderr']}, signal={response['run']['signal']}"
         )
-    return "0", "Unknown error"
+    return '0', 'Unknown error'

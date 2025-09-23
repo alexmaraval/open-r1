@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --partition=agentS-long
+#SBATCH --partition=agentS-xlong
 #SBATCH --output=./logs/%x-%j.out
 #SBATCH --error=./logs/%x-%j.err
 #SBATCH --job-name=open_r1
 #SBATCH --time=5-00:00:00
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:h200:2
 #SBATCH --requeue
