@@ -41,15 +41,15 @@ def main():
     parser = HfArgumentParser(ScriptArguments)
     args = parser.parse_args_into_dataclasses()[0]
 
-    if all(file.endswith(".json") for file in args.data_files):
-        ds = load_dataset("json", data_files=args.data_files)
-    elif all(file.endswith(".jsonl") for file in args.data_files):
-        ds = load_dataset("json", data_files=args.data_files)
+    if all(file.endswith('.json') for file in args.data_files):
+        ds = load_dataset('json', data_files=args.data_files)
+    elif all(file.endswith('.jsonl') for file in args.data_files):
+        ds = load_dataset('json', data_files=args.data_files)
     else:
-        ds = load_dataset("parquet", data_files=args.data_files)
+        ds = load_dataset('parquet', data_files=args.data_files)
     url = ds.push_to_hub(args.hub_repo_id, config_name=args.config_name, private=True)
-    print(f"Dataset available at: {url}")
+    print(f'Dataset available at: {url}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
