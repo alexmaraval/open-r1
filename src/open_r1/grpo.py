@@ -16,7 +16,6 @@ import logging
 import os
 import sys
 
-from copy import deepcopy
 import datasets
 import transformers
 from transformers import set_seed
@@ -86,7 +85,10 @@ def main(script_args, training_args, model_args):
     ##############
     logger.info('*** Loading model ***')
     model = get_model(model_args, training_args)
-
+    if training_args.beta is not None and training_args.beta > 0:
+        ref_model = get_model(model_args, training_args)
+    else:
+        ref_model = None
     # Get reward functions from the registry
     reward_funcs = get_reward_funcs(script_args)
 
@@ -114,7 +116,7 @@ def main(script_args, training_args, model_args):
     #############################
     trainer = PatchedGRPOTrainer(
         model=model,
-        ref_model=deepcopy(model),
+        ref_model=ref_model,
         reward_funcs=reward_funcs,
         args=training_args,
         train_dataset=dataset[script_args.dataset_train_split],
