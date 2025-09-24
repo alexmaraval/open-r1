@@ -138,10 +138,6 @@ if [[ "$USE_VLLM" == "true" ]]; then
       trl vllm-serve --model $MODEL --revision $REVISION \
       --tensor_parallel_size $TP --data_parallel_size $DP \
       --enforce-eager False --trust_remote_code True &
-#      srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
-#        vllm serve $MODEL --revision $REVISION \
-#        --tensor_parallel_size $TP --data_parallel_size $DP \
-#        --no-enforce-eager --trust-remote-code &
 
      OPTIONAL_ARGS="$OPTIONAL_ARGS --vllm_server_host=$VLLM_NODE"
 fi

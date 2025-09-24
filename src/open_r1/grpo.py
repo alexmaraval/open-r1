@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 
+from copy import deepcopy
 import datasets
 import transformers
 from transformers import set_seed
@@ -113,7 +114,7 @@ def main(script_args, training_args, model_args):
     #############################
     trainer = PatchedGRPOTrainer(
         model=model,
-        ref_model=model,
+        ref_model=deepcopy(model),
         reward_funcs=reward_funcs,
         args=training_args,
         train_dataset=dataset[script_args.dataset_train_split],
