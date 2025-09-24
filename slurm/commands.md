@@ -44,7 +44,7 @@ sbatch \
   --gres="gpu:h200:2" \
   --ntasks-per-node=1 \
   slurm/train.slurm \
-      --model "openPangu-Embedded-1"B \
+      --model "openPangu-Embedded-1B" \
       --task "grpo" \
       --config "math" \
       --accelerator "zero2" \

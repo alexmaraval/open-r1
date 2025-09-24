@@ -1,3 +1,20 @@
+# Changelog
+
+**[v0.1]** Setup + openPangu-Embedded-1B support
+
+- added configs for openPangu-Embedded-1B
+- fixed `train.slurm` and `evaluate.slurm` as well as configs to adapt to our cluster
+- setup evaluation results scripts
+- fix SFT checkpoint saving
+- **PATCH** `GRPOTrainer` into [PatchedGRPOTrainer](src/open_r1/custom_trainers/patched_grpo_trainer.py) to support
+  passing a reference model so that we can use KL divergence regularization with `openPangu-Embedded-1B`.
+
+# TODO
+
+- [x] See if I can patch `trl/trainer/grpo_trainer.py` when the reference model is created in a distributed setting, we
+  have the cole below where `config = AutoConfig.from_pretrained(model_id)` fails. We would need to e.g. add a
+  `ref_model` argument to the constructor.
+
 # Notes
 
 #### Example: aiming for 1k optimization steps in training
@@ -8,27 +25,28 @@
 - global_steps_per_epoch = #dataset / unique_prompts_per_batch = 16k / 64 ~= 250
 - epochs_for_1k_steps = 1000/250 = 4 epochs
 
-
 # Results
 
 ### openPangu-Embedded-1B
-| Task                     |Version| Metric                 |Value |  |Stderr|
-|--------------------------|------:|------------------------|-----:|--|-----:|
-| lighteval:math_500:0     |      2| math_pass@1:1_samples  |0.5920|± |0.0220|
-|                          |       | math_pass@1:4_samples  |0.5855|± |0.0175|
-| lighteval:aime24:0       |      2| math_pass@1:1_samples  |0.0667|± |0.0463|
-|                          |       | math_pass@1:4_samples  |0.0500|± |0.0279|
-|                          |       | math_pass@1:8_samples  |0.0417|± |0.0219|
-|                          |       | math_pass@1:16_samples |0.0604|± |0.0269|
-|                          |       | math_pass@1:32_samples |0.0646|± |0.0271|
-|                          |       | math_pass@1:64_samples |0.0651|± |0.0268|
-| lighteval:aime25:0       |      2| math_pass@1:1_samples  |0.0667|± |0.0463|
-|                          |       | math_pass@1:4_samples  |0.0750|± |0.0363|
-|                          |       | math_pass@1:8_samples  |0.0667|± |0.0310|
-|                          |       | math_pass@1:16_samples |0.0667|± |0.0287|
-|                          |       | math_pass@1:32_samples |0.0792|± |0.0328|
-|                          |       | math_pass@1:64_samples |0.0698|± |0.0308|
-| lighteval:gpqa:diamond:0 |      1| gpqa_pass@1:1_samples  |0.3131|± |0.0330|
-|                          |       | gpqa_pass@1:4_samples  |0.3548|± |0.0220|
-|                          |       | gpqa_pass@1:8_samples  |0.3636|± |0.0193|
-| lighteval:gsm8k:0        |      0| extractive_match       |0.4443|± |0.0137|
+
+| Task                     | Version | Metric                 |  Value |   | Stderr |
+|--------------------------|--------:|------------------------|-------:|---|-------:|
+| lighteval:math_500:0     |       2 | math_pass@1:1_samples  | 0.5920 | ± | 0.0220 |
+|                          |         | math_pass@1:4_samples  | 0.5855 | ± | 0.0175 |
+| lighteval:aime24:0       |       2 | math_pass@1:1_samples  | 0.0667 | ± | 0.0463 |
+|                          |         | math_pass@1:4_samples  | 0.0500 | ± | 0.0279 |
+|                          |         | math_pass@1:8_samples  | 0.0417 | ± | 0.0219 |
+|                          |         | math_pass@1:16_samples | 0.0604 | ± | 0.0269 |
+|                          |         | math_pass@1:32_samples | 0.0646 | ± | 0.0271 |
+|                          |         | math_pass@1:64_samples | 0.0651 | ± | 0.0268 |
+| lighteval:aime25:0       |       2 | math_pass@1:1_samples  | 0.0667 | ± | 0.0463 |
+|                          |         | math_pass@1:4_samples  | 0.0750 | ± | 0.0363 |
+|                          |         | math_pass@1:8_samples  | 0.0667 | ± | 0.0310 |
+|                          |         | math_pass@1:16_samples | 0.0667 | ± | 0.0287 |
+|                          |         | math_pass@1:32_samples | 0.0792 | ± | 0.0328 |
+|                          |         | math_pass@1:64_samples | 0.0698 | ± | 0.0308 |
+| lighteval:gpqa:diamond:0 |       1 | gpqa_pass@1:1_samples  | 0.3131 | ± | 0.0330 |
+|                          |         | gpqa_pass@1:4_samples  | 0.3548 | ± | 0.0220 |
+|                          |         | gpqa_pass@1:8_samples  | 0.3636 | ± | 0.0193 |
+| lighteval:gsm8k:0        |       0 | extractive_match       | 0.4443 | ± | 0.0137 |
+| original:mmlu:0          |       0 | acc                    | 0.2754 | ± | 0.0332 |

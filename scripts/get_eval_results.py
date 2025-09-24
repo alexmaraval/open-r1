@@ -16,7 +16,7 @@ if __name__ == '__main__':
         'mmlu': 'original|mmlu|0',
     }
     for task_name, task in tasks.items():
-        details_dir = f"{output_dir}/{model_name.replace('/', '_')}/{revision}/{task_name}/details/{model_name}"
+        # details_dir = f"{output_dir}/{model_name.replace('/', '_')}/{revision}/{task_name}/details/{model_name}"
         results_dir = f"{output_dir}/{model_name.replace('/', '_')}/{revision}/{task_name}/results/{model_name}"
 
         if not os.path.exists(results_dir):
@@ -29,19 +29,23 @@ if __name__ == '__main__':
         timestamp = sorted(timestamps)[-1].split('/')[-1].split('results_')[-1].split('.json')[0]
         # print(f"Latest timestamp: {timestamp}")
 
-        details_path = f'{details_dir}/{timestamp}/details_{task}_{timestamp}.parquet'
+        # details_path = f'{details_dir}/{timestamp}/details_{task}_{timestamp}.parquet'
         results_path = f'{results_dir}/results_{timestamp}.json'
 
-        if not os.path.exists(details_path) or not os.path.exists(results_path):
+        # if not os.path.exists(details_path) or not os.path.exists(results_path):
+        if not os.path.exists(results_path):
             print(f'Skipping {task_name}, probably not done yet...')
             continue
 
         # Load the results
         results = json.load(open(results_path))
-        task_results = results['results'][task]
-        print('Task', task)
+        if task in results['results']:
+            task_results = results['results'][task]
+        else:
+            task_results = results['results']['all']
         means = {k: v for k, v in task_results.items() if 'stderr' not in k}
         stdrs = {k: v for k, v in task_results.items() if 'stderr' in k}
+        print('Task', task)
         for mean_k, stdr_k in zip(means, stdrs):
             mean, stderr = means[mean_k] * 100, stdrs[stdr_k] * 100
             print(f'\t- {mean_k:<30s} {mean:.2f} +/- {stderr:.2f}')

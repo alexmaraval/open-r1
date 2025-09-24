@@ -137,7 +137,7 @@ if [[ "$USE_VLLM" == "true" ]]; then
      srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
       trl vllm-serve --model $MODEL --revision $REVISION \
       --tensor_parallel_size $TP --data_parallel_size $DP \
-      --enforce-eager False --trust_remote_code &
+      --enforce-eager False --trust_remote_code True &
 #      srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
 #        vllm serve $MODEL --revision $REVISION \
 #        --tensor_parallel_size $TP --data_parallel_size $DP \
@@ -158,7 +158,8 @@ export CMD=" \
     src/open_r1/$TASK.py --config $CONFIG_FILE $OPTIONAL_ARGS
     "
 
-export LAUNCHER="ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
+#export LAUNCHER="ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
+export LAUNCHER="accelerate launch \
     --config_file recipes/accelerate_configs/$ACCELERATOR.yaml  \
     --gradient_accumulation_steps $GRAD_ACC_STEPS \
     --num_machines $NUM_NODES \
