@@ -99,6 +99,7 @@ def main(script_args, training_args, model_args):
     if hasattr(model, 'generation_config'):
         gen_cfg = model.generation_config
         gen_cfg.do_sample = False
+        gen_cfg.temperature = None
         gen_cfg.top_p = None
         gen_cfg.top_k = None
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:h200:2
+#SBATCH --gres=gpu:h200:3
 #SBATCH --job-name=open_r1
 #SBATCH --partition=agentS-xlong
 #SBATCH --time=5-00:00:00
@@ -115,37 +115,20 @@ echo "Gradient accumulation steps: $GRAD_ACC_STEPS"
 MODEL=$(grep 'model_name_or_path:' $CONFIG_FILE | awk '{print $2}')
 REVISION=$(grep 'model_revision:' $CONFIG_FILE | head -n 1 | awk '{print $2}')
 
-# Distributed configuration
-NUM_NODES=$SLURM_NNODES
-GPUS_PER_NODE=2
-WORLD_SIZE=$(($NUM_NODES*$GPUS_PER_NODE))
-NODELIST=($(scontrol show hostnames $SLURM_JOB_NODELIST))
-MASTER_ADDR=${NODELIST[0]}  # First node for main process
-MASTER_PORT=6000
-#MASTER_PORT=$((6000 + $SLURM_JOB_ID % 100))
-TRAIN_NODES=("${NODELIST[@]}")
+# ---------- vLLM ----------
+echo "Starting vLLM server on localhost..."
 
-USE_VLLM="false"
-if [[ -f "$CONFIG_FILE" ]] && grep -qE '^\s*use_vllm:\s*true' "$CONFIG_FILE"; then
-    USE_VLLM="true"
-fi
-# if using vllm
-if [[ "$USE_VLLM" == "true" ]]; then
-     TRAIN_NODES=("${NODELIST[@]:0:$((NUM_NODES - 1))}")
-     VLLM_NODE=${NODELIST[-1]} # Last node
-     WORLD_SIZE=$((WORLD_SIZE - GPUS_PER_NODE))
-     NUM_NODES=$((NUM_NODES - 1))
+CUDA_VISIBLE_DEVICES=2 trl vllm-serve \
+  --model $MODEL --revision $REVISION \
+  --enforce-eager False --trust_remote_code True \
+  --host localhost --port 8010 \
+  --log-level warning &
 
-     echo "Starting vLLM server on node $VLLM_NODE..."
+OPTIONAL_ARGS="$OPTIONAL_ARGS --vllm_server_host localhost --vllm_server_port 8010"
 
-     srun --nodes=1 --ntasks=1 --nodelist=$VLLM_NODE \
-      trl vllm-serve --model $MODEL --revision $REVISION \
-      --tensor_parallel_size $TP --data_parallel_size $DP \
-      --enforce-eager False --trust_remote_code True \
-      --log-level warning &
-
-     OPTIONAL_ARGS="$OPTIONAL_ARGS --vllm_server_host=$VLLM_NODE"
-fi
+echo "Waiting for vLLM server to start..."
+until nc -z localhost 8010; do sleep 5; done
+echo "vLLM is up!"
 
 # force crashing on nccl issues like hanging broadcast
 export NCCL_ASYNC_ERROR_HANDLING=1
@@ -155,37 +138,18 @@ export NCCL_ASYNC_ERROR_HANDLING=1
 # export NCCL_NSOCKS_PERTHREAD=1
 # export CUDA_LAUNCH_BLOCKING=1
 
-export CMD=" \
-    src/open_r1/$TASK.py --config $CONFIG_FILE $OPTIONAL_ARGS
-    "
-
-#export LAUNCHER="ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
-export LAUNCHER="accelerate launch \
+export LAUNCHER="ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
     --config_file recipes/accelerate_configs/$ACCELERATOR.yaml  \
     --gradient_accumulation_steps $GRAD_ACC_STEPS \
-    --num_machines $NUM_NODES \
-    --num_processes $WORLD_SIZE \
-    --main_process_ip $MASTER_ADDR \
-    --main_process_port $MASTER_PORT \
-    --machine_rank $SLURM_PROCID \
-    --rdzv_backend=c10d \
-    --max_restarts 1 \
-    --tee 3 \
+    --num_machines 1 \
+    --num_processes 2 \
     "
 
-# srun error handling:
-# --wait=60: wait 60 sec after the first task terminates before terminating all remaining tasks
-# --kill-on-bad-exit=1: terminate a step if any task exits with a non-zero exit code
-NODELIST=$(IFS=,; echo "${TRAIN_NODES[*]}")
-
-SRUN_ARGS=" \
-    --wait=60 \
-    --kill-on-bad-exit=1 \
-    --nodes=$NUM_NODES \
-    --ntasks=$NUM_NODES \
-    --nodelist=$NODELIST
+export CMD=" \
+    src/open_r1/$TASK.py --config $CONFIG_FILE $OPTIONAL_ARGS \
     "
-srun $SRUN_ARGS bash -c "$LAUNCHER $CMD" 2>&1
+
+eval "CUDA_VISIBLE_DEVICES=0,1 $LAUNCHER $CMD"
 
 END_TIME=$(date +%s)
 echo "END TIME: $(date)"
