@@ -37,7 +37,7 @@ max_grad_norm: 0.2
 max_length: 32768
 max_steps: -1
 num_train_epochs: 5
-output_dir: runs/openPangu-Embedded-1B-Distill
+output_dir: runs/debug-openPangu-Embedded-1B-Distill
 overwrite_output_dir: true
 per_device_eval_batch_size: 1
 per_device_train_batch_size: 2

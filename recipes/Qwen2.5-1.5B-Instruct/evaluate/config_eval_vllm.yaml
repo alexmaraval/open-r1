@@ -1,0 +1,18 @@
+model_parameters:
+#  model_name: Qwen/Qwen2.5-1.5B-Instruct
+#  revision: main
+  model_name: "/home/a00861921/Projects/open-r1/runs/Qwen2.5-1.5B-Instruct-Distill/checkpoint-2730"
+  revision: distill
+  max_model_length: 32768
+  dtype: bfloat16
+#  batch_size: 1
+  trust_remote_code: true
+  data_parallel_size: 1
+  gpu_memory_utilization: 0.8
+  generation_parameters:
+    #num_blocks: 4096
+    #block_size: 64
+    #max_new_tokens: 256
+    max_new_tokens: 32768
+    temperature: 0.6
+    top_p: 0.95
