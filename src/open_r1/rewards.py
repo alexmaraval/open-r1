@@ -37,6 +37,21 @@ from .utils.competitive_programming import score_submission as cf_score_submissi
 from .utils.competitive_programming import score_subtask
 
 
+latex_extraction_config = LatexExtractionConfig(
+    normalization_config=NormalizationConfig(
+        nits=False,
+        malformed_operators=False,
+        basic_latex=True,
+        equations=True,
+        boxed='all',
+        units=True,
+    ),
+    # Ensures that boxed is tried first
+    boxed_match_priority=0,
+    try_extract_without_anchor=False,
+)
+
+
 def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str], **kwargs) -> list[Optional[float]]:
     """Reward function that checks if the completion is the same as the ground truth."""
     contents = [completion[0]['content'] for completion in completions]
@@ -50,21 +65,38 @@ def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str]
             # We require the answer to be provided in correct latex (no malformed operators)
             answer_parsed = parse(
                 content,
-                extraction_config=[
-                    LatexExtractionConfig(
-                        normalization_config=NormalizationConfig(
-                            nits=False,
-                            malformed_operators=False,
-                            basic_latex=True,
-                            equations=True,
-                            boxed='all',
-                            units=True,
-                        ),
-                        # Ensures that boxed is tried first
-                        boxed_match_priority=0,
-                        try_extract_without_anchor=False,
-                    )
-                ],
+                extraction_config=[latex_extraction_config],
+                extraction_mode='first_match',
+            )
+            # Compute binary rewards if verifiable, `None` otherwise to skip this example
+            try:
+                reward = float(verify(gold_parsed, answer_parsed))
+            except Exception as e:
+                print(f'verify failed: {e}, answer: {answer_parsed}, gold: {gold_parsed}')
+                reward = None
+        else:
+            # If the gold solution is not parseable, we assign `None` to skip this example
+            reward = None
+            print('Failed to parse gold solution: ', sol)
+        rewards.append(reward)
+
+    return rewards
+
+
+def modified_accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str], **kwargs) -> list[Optional[float]]:
+    """Reward function that checks if the completion is the same as the ground truth."""
+    contents = [completion[0]['content'] for completion in completions]
+    rewards = []
+    for content, sol in zip(contents, solution):
+        gold_parsed = parse(
+            sol,
+            extraction_mode='first_match',
+        )
+        if len(gold_parsed) != 0:
+            # We require the answer to be provided in correct latex (no malformed operators)
+            answer_parsed = parse(
+                content,
+                # extraction_config=[latex_extraction_config],
                 extraction_mode='first_match',
             )
             # Compute binary rewards if verifiable, `None` otherwise to skip this example
@@ -646,6 +678,7 @@ def get_soft_overlong_punishment(max_completion_len, soft_punish_cache):
 def get_reward_funcs(script_args) -> list[Callable]:
     REWARD_FUNCS_REGISTRY = {
         'accuracy': accuracy_reward,
+        'modified_accuracy': modified_accuracy_reward,
         'format': format_reward,
         'reasoning_steps': reasoning_steps_reward,
         'cosine': get_cosine_scaled_reward(

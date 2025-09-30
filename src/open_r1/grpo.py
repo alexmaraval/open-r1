@@ -21,6 +21,8 @@ import transformers
 from transformers import set_seed
 from transformers.trainer_utils import get_last_checkpoint
 
+from math_verify import parse
+
 from open_r1.configs import GRPOConfig, GRPOScriptArguments
 from open_r1.rewards import get_reward_funcs
 from open_r1.utils import get_dataset, get_model, get_tokenizer
@@ -105,11 +107,22 @@ def main(script_args, training_args, model_args):
         prompt.append({'role': 'user', 'content': example[prompt_column]})
         return {'prompt': prompt}
 
+    def is_answer_parsable(example, answer_column: str = script_args.dataset_answer_column):
+        answer = example[answer_column]
+        parsed_answer = parse(answer, extraction_mode='first_match')
+        return len(parsed_answer) != 0
+
     dataset = dataset.map(make_conversation)
+    dataset = dataset.filter(is_answer_parsable)
 
     for split in dataset:
         if 'messages' in dataset[split].column_names:
             dataset[split] = dataset[split].remove_columns('messages')
+
+    # sanitize invalid config before training
+    if hasattr(model, 'generation_config'):
+        gen_cfg = model.generation_config
+        gen_cfg.do_sample = True
 
     #############################
     # Initialize the GRPO trainer
