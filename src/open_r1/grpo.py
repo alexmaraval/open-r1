@@ -113,7 +113,7 @@ def main(script_args, training_args, model_args):
         if 'messages' in dataset[split].column_names:
             dataset[split] = dataset[split].remove_columns('messages')
         # make sure the answer column is named "solution" after removing any existing column "solution"
-        if "solution" in dataset[split]:
+        if "solution" in dataset[split].features:
             dataset[split] = dataset[split].remove_columns('solution')
         dataset[split] = dataset[split].rename_column(script_args.dataset_answer_column, 'solution')
 
