@@ -109,14 +109,13 @@ def main(script_args, training_args, model_args):
 
     dataset = dataset.map(make_conversation)
 
-    # TODO improve this part: remove / rename columns depending on dataset
     for split in dataset:
         if 'messages' in dataset[split].column_names:
             dataset[split] = dataset[split].remove_columns('messages')
-        if 'question' in dataset[split].column_names:
-            dataset[split] = dataset[split].remove_columns('question')
-        if 'answer' in dataset[split].column_names and not 'solution' in dataset[split]:
-            dataset[split] = dataset[split].rename_column('answer', 'solution')
+        # make sure the answer column is named "solution" after removing any existing column "solution"
+        if "solution" in dataset[split]:
+            dataset[split] = dataset[split].remove_columns('solution')
+        dataset[split] = dataset[split].rename_column(script_args.dataset_answer_column, 'solution')
 
     # sanitize invalid config before training
     if hasattr(model, 'generation_config'):

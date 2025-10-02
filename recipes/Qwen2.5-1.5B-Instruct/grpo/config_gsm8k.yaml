@@ -47,9 +47,9 @@ reward_funcs:
 - format
 - tag_count
 reward_weights:
-- 1.0
-- 1.0
-- 1.0
+- 0.8
+- 0.1
+- 0.1
 save_strategy: epoch
 save_total_limit: 4
 seed: 42

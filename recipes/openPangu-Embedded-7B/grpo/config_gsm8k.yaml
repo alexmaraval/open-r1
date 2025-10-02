@@ -13,7 +13,19 @@ dataset_config: main
 dataset_prompt_column: question
 dataset_answer_column: answer
 system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the boxed answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n\\boxed{...}\n</answer>"
+
 # GRPO trainer config
+use_peft: true
+lora_r: 32
+lora_alpha: 16
+lora_target_modules:
+  - down_proj
+  - o_proj
+  - k_proj
+  - q_proj
+  - gate_proj
+  - up_proj
+  - v_proj
 bf16: true
 beta: 0.04
 use_vllm: true
@@ -49,9 +61,9 @@ reward_funcs:
 - format
 - tag_count
 reward_weights:
-- 1.0
-- 1.0
-- 1.0
+- 0.8
+- 0.1
+- 0.1
 save_strategy: "epoch"
 save_total_limit: 4
 seed: 42

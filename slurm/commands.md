@@ -1,25 +1,16 @@
 # SFT
 
 ```shell
-model="openPangu-Embedded-1B"
+#model="openPangu-Embedded-1B"
 model="openPangu-Embedded-7B"
-model="Qwen2.5-1.5B-Instruct"
+#model="Qwen2.5-1.5B-Instruct"
 task="sft"
 config="distill"
 accelerator="zero2-2gpu"
 
 job_name="${model}-${config}"
-nodes=1
-partition="agentS-long"
-time="1-12:00:00"
-gres="gpu:h200:4"
 
-sbatch \
-  --job-name="$job_name" \
-  --nodes="$nodes" \
-  --partition="$partition" \
-  --time="$time" \
-  --gres="$gres" \
+sbatch --job-name="$job_name" \
   slurm/train.slurm \
       --model "$model" \
       --task "$task" \
@@ -34,7 +25,7 @@ Or from an interactive session
 export WANDB_PROJECT="open-r1"
 export NCCL_ASYNC_ERROR_HANDLING=1
 ACCELERATE_LOG_LEVEL=info TRANSFORMERS_VERBOSITY=info accelerate launch \
-    --config_file recipes/accelerate_configs/zero2_debug.yaml \
+    --config_file recipes/accelerate_configs/zero2-2gpu.yaml \
     --gradient_accumulation_steps 32 \
     src/open_r1/sft.py \
         --config recipes/openPangu-Embedded-1B/sft/config_distill_debug.yaml \
@@ -52,10 +43,11 @@ this particular example, node will have 2GPUs and DP=2.
 
 ```shell
 #model="openPangu-Embedded-1B"
-model="Qwen2.5-1.5B-Instruct"
+model="openPangu-Embedded-7B"
+#model="Qwen2.5-1.5B-Instruct"
 task="grpo"
-#config="math"
-config="gsm8k"
+config="math"
+#config="gsm8k"
 accelerator="zero2-2gpu"
 dp=2
 
@@ -63,6 +55,8 @@ job_name="${model}-${task}-${config}"
 nodes=2
 partition="agentS-long"
 time="1-12:00:00"
+#partition="agentS-xlong"
+#time="5-00:00:00"
 gres="gpu:h200:2"
 
 sbatch \
@@ -84,11 +78,13 @@ Or to launch on 3 GPUs on one single node with vLLM server, use this command
 
 ```shell
 task="grpo"
-#config="math"
-config="gsm8k"
+config="math"
+#config="gsm8k"
 accelerator="zero2-2gpu"
+#model="openPangu-Embedded-1B"
+model="openPangu-Embedded-7B"
+#model="Qwen2.5-1.5B-Instruct"
 
-model="openPangu-Embedded-1B"
 job_name="${model}-${task}-${config}"
 sbatch --job-name="$job_name" \
   slurm/train_grpo_vllm_1node.slurm \
@@ -98,7 +94,6 @@ sbatch --job-name="$job_name" \
     --accelerator "$accelerator" \
     --args "--run_name=${job_name}"
 
-model="Qwen2.5-1.5B-Instruct"
 partition="agentS-long"
 time="1-12:00:00"
 job_name="${model}-${task}-${config}"
@@ -164,14 +159,15 @@ DETAILS_REPO_ID="alexmaraval/details-$MODEL_ID"
 # Edit directly `model_name_or_path` and `revision` in the config.yaml
 EVAL_CONFIG=recipes/openPangu-Embedded-1B/evaluate/config_eval_vllm.yaml
 MODEL_ID="openPangu-Embedded-1B"
+MODEL_REVISION="grpo_gsm8k"
 TASK="lighteval|gsm8k|0|0"
 TASK_NAME="gsm8k"
-OUTPUT_DIR="eval_results/$MODEL_NAME/$MODEL_REVISION/$TASK_NAME"
+OUTPUT_DIR="eval_results/$MODEL_ID/$MODEL_REVISION/$TASK_NAME"
 
 echo "Running lighteval script for $TASK_NAME ..."
 echo "Eval results will be saved to $OUTPUT_DIR"
 
-lighteval vllm $EVAL_CONFIG $TASKS \
+lighteval vllm $EVAL_CONFIG $TASK \
     --use-chat-template \
     --output-dir $OUTPUT_DIR \
     --save-details

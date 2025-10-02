@@ -14,7 +14,7 @@ eos_token: <|im_end|>
 bf16: true
 do_eval: false
 eval_strategy: 'no'
-gradient_accumulation_steps: 32
+gradient_accumulation_steps: 256
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
@@ -30,13 +30,13 @@ lr_scheduler_kwargs:
   min_lr_rate: 0.1
 packing: false
 max_grad_norm: 0.2
-max_length: 32768
+max_length: 4096 #32768
 max_steps: -1
 num_train_epochs: 5
 output_dir: runs/Qwen2.5-1.5B-Instruct-Distill
 overwrite_output_dir: false
 per_device_eval_batch_size: 1
-per_device_train_batch_size: 2
+per_device_train_batch_size: 4
 push_to_hub: true
 report_to:
 - wandb
