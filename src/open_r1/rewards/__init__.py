@@ -23,18 +23,22 @@ from functools import partial, update_wrapper
 from typing import Callable, Dict, Literal, Optional
 
 from latex2sympy2_extended import NormalizationConfig
-from math_verify import LatexExtractionConfig, parse, verify
+from math_verify import LatexExtractionConfig, ExprExtractionConfig, parse, verify
+from math_verify.errors import TimeoutException
+from math_verify.metric import math_metric
 
-from .utils.code_providers import get_provider
-from .utils.competitive_programming import (
+from open_r1.utils.code_providers import get_provider
+from open_r1.utils.competitive_programming import (
     SubtaskResult,
     add_includes,
     get_morph_client_from_env,
     get_piston_client_from_env,
 )
-from .utils.competitive_programming import patch_code as cf_patch_code
-from .utils.competitive_programming import score_submission as cf_score_submission
-from .utils.competitive_programming import score_subtask
+from open_r1.utils.competitive_programming import patch_code as cf_patch_code
+from open_r1.utils.competitive_programming import score_submission as cf_score_submission
+from open_r1.utils.competitive_programming import score_subtask
+from open_r1.rewards.verl_math_reward import compute_scores as verl_math_reward
+from open_r1.rewards.verl_math_reward import compute_scores_gsm8k as gsm8k_verl_math_reward
 
 
 latex_extraction_config = LatexExtractionConfig(
@@ -83,33 +87,29 @@ def accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str]
     return rewards
 
 
-def modified_accuracy_reward(completions: list[list[dict[str, str]]], solution: list[str], **kwargs) -> list[Optional[float]]:
+def accuracy_reward_with_timeout(
+    completions: list[list[dict[str, str]]], solution: list[str], **kwargs
+) -> list[Optional[float]]:
     """Reward function that checks if the completion is the same as the ground truth."""
     contents = [completion[0]['content'] for completion in completions]
     rewards = []
     for content, sol in zip(contents, solution):
-        gold_parsed = parse(
-            sol,
-            extraction_mode='first_match',
+        verify_func = math_metric(
+            gold_extraction_target=(LatexExtractionConfig(),),
+            pred_extraction_target=(ExprExtractionConfig(), LatexExtractionConfig()),
         )
-        if len(gold_parsed) != 0:
-            # We require the answer to be provided in correct latex (no malformed operators)
-            answer_parsed = parse(
-                content,
-                # extraction_config=[latex_extraction_config],
-                extraction_mode='first_match',
-            )
-            # Compute binary rewards if verifiable, `None` otherwise to skip this example
-            try:
-                reward = float(verify(gold_parsed, answer_parsed))
-            except Exception as e:
-                print(f'verify failed: {e}, answer: {answer_parsed}, gold: {gold_parsed}')
-                reward = None
-        else:
-            # If the gold solution is not parseable, we assign `None` to skip this example
-            reward = None
-            print('Failed to parse gold solution: ', sol)
-        rewards.append(reward)
+        ret_score = 0.0
+
+        # Wrap the ground truth in \boxed{} format for verification
+        ground_truth_boxed = "\\boxed{" + sol + "}"
+        try:
+            ret_score, _ = verify_func([ground_truth_boxed], [content])
+        except Exception:
+            pass
+        except TimeoutException:
+            ret_score = 0
+
+        rewards.append(ret_score)
 
     return rewards
 
@@ -678,7 +678,9 @@ def get_soft_overlong_punishment(max_completion_len, soft_punish_cache):
 def get_reward_funcs(script_args) -> list[Callable]:
     REWARD_FUNCS_REGISTRY = {
         'accuracy': accuracy_reward,
-        'modified_accuracy': modified_accuracy_reward,
+        'accuracy_with_timeout': accuracy_reward_with_timeout,
+        'verl_math_reward': verl_math_reward,
+        'gsm8k_verl_math_reward': gsm8k_verl_math_reward,
         'format': format_reward,
         'reasoning_steps': reasoning_steps_reward,
         'cosine': get_cosine_scaled_reward(
