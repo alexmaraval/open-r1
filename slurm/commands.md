@@ -78,22 +78,33 @@ Or to launch on 3 GPUs on one single node with vLLM server, use this command
 
 ```shell
 task="grpo"
-config="math"
+#config="math1k"
 #config="gsm8k"
+config="math220k"
 accelerator="zero2-2gpu"
-#model="openPangu-Embedded-1B"
-model="openPangu-Embedded-7B"
+
+model="openPangu-Embedded-1B"
+#model="openPangu-Embedded-7B"
 #model="Qwen2.5-1.5B-Instruct"
 
 job_name="${model}-${task}-${config}"
+```
+
+```shell
+partition="agentS-xlong"
+time="5-00:00:00"
 sbatch --job-name="$job_name" \
+       --partition="$partition" \
+       --time="$time" \
   slurm/train_grpo_vllm_1node.slurm \
     --model "$model" \
     --task "$task" \
     --config "$config" \
     --accelerator "$accelerator" \
     --args "--run_name=${job_name}"
+```
 
+```shell
 partition="agentS-long"
 time="1-12:00:00"
 job_name="${model}-${task}-${config}"
@@ -116,8 +127,9 @@ sbatch --job-name="$job_name" \
 # ------------------------------ FIRST! ------------------------------
 # Edit directly `model_name_or_path` and `revision` in the config.yaml
 # --------------------------------------------------------------------
-MODEL_ID="openPangu-Embedded-1B"
-MODEL_ID="Qwen2.5-1.5B-Instruct"
+#MODEL_ID="openPangu-Embedded-1B"
+MODEL_ID="openPangu-Embedded-7B"
+#MODEL_ID="Qwen2.5-1.5B-Instruct"
 #MODEL_ID="Qwen3-0.6B"
 #MODEL_ID="Qwen3-1.7B"
 EVAL_CONFIG="recipes/${MODEL_ID}/evaluate/config_eval_vllm.yaml"
@@ -157,11 +169,18 @@ LM_EVAL_REPO_ID="alexmaraval/open-r1-eval-leaderboard"
 DETAILS_REPO_ID="alexmaraval/details-$MODEL_ID"
 
 # Edit directly `model_name_or_path` and `revision` in the config.yaml
-EVAL_CONFIG=recipes/openPangu-Embedded-1B/evaluate/config_eval_vllm.yaml
-MODEL_ID="openPangu-Embedded-1B"
-MODEL_REVISION="grpo_gsm8k"
-TASK="lighteval|gsm8k|0|0"
-TASK_NAME="gsm8k"
+#EVAL_CONFIG=recipes/openPangu-Embedded-1B/evaluate/config_eval_vllm.yaml
+EVAL_CONFIG=recipes/openPangu-Embedded-7B/evaluate/config_eval_vllm.yaml
+#MODEL_ID="openPangu-Embedded-1B"
+MODEL_ID="openPangu-Embedded-7B"
+MODEL_REVISION="main"
+#MODEL_REVISION="grpo_gsm8k"
+#TASK="lighteval|gsm8k|0|0"
+#TASK_NAME="gsm8k"
+#TASK="lighteval|math_500|0|0"
+#TASK_NAME="math_500"
+TASK="lighteval|aime24|0|0"
+TASK_NAME="aime24"
 OUTPUT_DIR="eval_results/$MODEL_ID/$MODEL_REVISION/$TASK_NAME"
 
 echo "Running lighteval script for $TASK_NAME ..."

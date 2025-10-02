@@ -156,6 +156,10 @@ class GRPOConfig(trl.GRPOConfig):
         default=None,
         metadata={'help': 'The optional system prompt to use.'},
     )
+    instruction: Optional[str] = field(
+        default=None,
+        metadata={'help': 'The optional instruction to use.'},
+    )
     wandb_log_unique_prompts: bool = field(
         default=True,
         metadata={
