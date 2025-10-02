@@ -1,5 +1,5 @@
 # Model arguments
-model_name_or_path: FreedomIntelligence/openPangu-Embedded-1B
+model_name_or_path: FreedomIntelligence/openPangu-Embedded-7B
 trust_remote_code: true
 local_files_only: true
 model_revision: main
@@ -10,18 +10,19 @@ attn_implementation: flex_attention #flash_attention_2
 chat_template: "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '[unused9]系统：[unused10]' }}{% endif %}{% if message['role'] == 'system' %}{{ '[unused9]系统：' + message['content'] + '[unused10]' }}{% endif %}{% if message['role'] == 'assistant' %}{{'[unused9]助手：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'tool' %}{{'[unused9]工具：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'function' %}{{'[unused9]方法：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'user' %}{{'[unused9]用户：' + message['content'] + '[unused10]'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '[unused9]助手：' }}{% endif %}"
 dataset_name: open-r1/OpenR1-Math-220k
 dataset_prompt_column: problem
-dataset_answer_column: answer
-system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the boxed answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n\\boxed{...}\n</answer>"
+system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n...\n</answer>"
+debug_run: true
+
 # GRPO trainer config
 bf16: true
 beta: 0.04
 use_vllm: true
 do_eval: false
-gradient_accumulation_steps: 4
+gradient_accumulation_steps: 16
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: openPangu-Embedded-1B-Math-GRPO
+hub_model_id: debug-openPangu-Embedded-7B-Math-GRPO
 hub_strategy: every_save
 hub_private_repo: true
 learning_rate: 2.0e-05
@@ -36,15 +37,15 @@ max_completion_length: 1024
 max_steps: -1
 num_generations: 16
 num_train_epochs: 4
-output_dir: runs/openPangu-Embedded-1B-Math-GRPO
-overwrite_output_dir: false
+output_dir: runs/debug-openPangu-Embedded-7B-Math-GRPO
+overwrite_output_dir: true
 per_device_eval_batch_size: 16
-per_device_train_batch_size: 64
-push_to_hub: true
+per_device_train_batch_size: 16
+push_to_hub: false
 report_to:
 - wandb
 reward_funcs:
-- verl_math_reward # accuracy, accuracy_with_timeout, verl_math_reward
+- accuracy
 - format
 - tag_count
 reward_weights:
@@ -52,6 +53,8 @@ reward_weights:
 - 1.0
 - 1.0
 save_strategy: "epoch"
+#save_strategy: "steps"
+#save_steps: 100
 save_total_limit: 4
 seed: 42
 warmup_ratio: 0.1

@@ -1,0 +1,51 @@
+# Model arguments
+model_name_or_path: FreedomIntelligence/openPangu-Embedded-7B
+trust_remote_code: true
+local_files_only: true
+model_revision: main
+torch_dtype: bfloat16
+attn_implementation: flex_attention #eager, flash_attention_2, flash_attention_3, sdpa, flex_attention
+
+# Data training arguments
+chat_template: "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '[unused9]系统：[unused10]' }}{% endif %}{% if message['role'] == 'system' %}{{ '[unused9]系统：' + message['content'] + '[unused10]' }}{% endif %}{% if message['role'] == 'assistant' %}{{'[unused9]助手：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'tool' %}{{'[unused9]工具：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'function' %}{{'[unused9]方法：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'user' %}{{'[unused9]用户：' + message['content'] + '[unused10]'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '[unused9]助手：' }}{% endif %}"
+dataset_name: open-r1/Mixture-of-Thoughts
+dataset_config: all
+dataset_num_proc: 12
+#eos_token: <|im_end|>
+debug_run: true
+
+# SFT trainer config
+bf16: true
+do_eval: false
+eval_strategy: 'no'
+gradient_accumulation_steps: 32
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+hub_model_id: openPangu-Embedded-7B-Distill
+hub_strategy: every_save
+hub_private_repo: true
+learning_rate: 4.0e-05
+log_level: info
+logging_steps: 1
+logging_strategy: steps
+lr_scheduler_type: cosine_with_min_lr
+lr_scheduler_kwargs:
+  min_lr_rate: 0.1
+packing: false
+max_grad_norm: 0.2
+max_length: 32768
+max_steps: -1
+num_train_epochs: 5
+output_dir: runs/debug-openPangu-Embedded-7B-Distill
+overwrite_output_dir: true
+per_device_eval_batch_size: 1
+per_device_train_batch_size: 2
+push_to_hub: true
+report_to:
+- wandb
+save_strategy: epoch
+save_total_limit: 1
+seed: 42
+use_liger_kernel: true
+warmup_ratio: 0.03

@@ -1,21 +1,16 @@
 model_parameters:
-#  model_name: "FreedomIntelligence/openPangu-Embedded-1B"
-#  revision: "main"
-#  model_name: "/home/a00861921/Projects/open-r1/runs/openPangu-Embedded-1B-Distill/checkpoint-2730"
-#  revision: "distill"
-  model_name: "/home/a00861921/Projects/open-r1/runs/openPangu-Embedded-1B-GRPO-GSM8k"
-  revision: grpo_gsm8k
+  model_name: "FreedomIntelligence/openPangu-Embedded-7B"
 #  chat_template: "{% for message in messages %}{% if loop.first and messages[0]['role'] != 'system' %}{{ '[unused9]系统：[unused10]' }}{% endif %}{% if message['role'] == 'system' %}{{ '[unused9]系统：' + message['content'] + '[unused10]' }}{% endif %}{% if message['role'] == 'assistant' %}{{'[unused9]助手：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'tool' %}{{'[unused9]工具：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'function' %}{{'[unused9]方法：' + message['content'] + '[unused10]'}}{% endif %}{% if message['role'] == 'user' %}{{'[unused9]用户：' + message['content'] + '[unused10]'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '[unused9]助手：' }}{% endif %}"
-  max_model_length: 32768
+  revision: "main"
+  max_length: 32768
   dtype: "bfloat16"
+  compile: true
+  model_parallel: false
 #  batch_size: 1
   trust_remote_code: true
-  data_parallel_size: 1
-  gpu_memory_utilization: 0.8
   generation_parameters:
     #num_blocks: 4096
     #block_size: 64
-    #max_new_tokens: 256
     max_new_tokens: 32768
     temperature: 0.6
     top_p: 0.95

@@ -1,8 +1,10 @@
 model_parameters:
 #  model_name: Qwen/Qwen2.5-1.5B-Instruct
 #  revision: main
-  model_name: "/home/a00861921/Projects/open-r1/runs/Qwen2.5-1.5B-Instruct-Distill/checkpoint-2730"
-  revision: distill
+#  model_name: "/home/a00861921/Projects/open-r1/runs/Qwen2.5-1.5B-Instruct-Distill/checkpoint-2730"
+#  revision: distill
+  model_name: "/home/a00861921/Projects/open-r1/runs/Qwen2.5-1.5B-Instruct-GRPO-GSM8k"
+  revision: grpo_gsm8k
   max_model_length: 32768
   dtype: bfloat16
 #  batch_size: 1

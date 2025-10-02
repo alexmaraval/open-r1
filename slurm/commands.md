@@ -2,10 +2,11 @@
 
 ```shell
 model="openPangu-Embedded-1B"
+model="openPangu-Embedded-7B"
 model="Qwen2.5-1.5B-Instruct"
 task="sft"
 config="distill"
-accelerator="zero2"
+accelerator="zero2-2gpu"
 
 job_name="${model}-${config}"
 nodes=1
@@ -50,17 +51,18 @@ python src/open_r1/sft.py \
 this particular example, node will have 2GPUs and DP=2.
 
 ```shell
-model="openPangu-Embedded-1B"
-#model="Qwen2.5-1.5B-Instruct"
+#model="openPangu-Embedded-1B"
+model="Qwen2.5-1.5B-Instruct"
 task="grpo"
-config="math"
+#config="math"
+config="gsm8k"
 accelerator="zero2-2gpu"
 dp=2
 
 job_name="${model}-${task}-${config}"
 nodes=2
-partition="agentS-xlong"
-time="5-00:00:00"
+partition="agentS-long"
+time="1-12:00:00"
 gres="gpu:h200:2"
 
 sbatch \
@@ -81,15 +83,28 @@ sbatch \
 Or to launch on 3 GPUs on one single node with vLLM server, use this command
 
 ```shell
-model="openPangu-Embedded-1B"
-model="Qwen2.5-1.5B-Instruct"
 task="grpo"
-config="math"
+#config="math"
+config="gsm8k"
 accelerator="zero2-2gpu"
 
+model="openPangu-Embedded-1B"
 job_name="${model}-${task}-${config}"
-
 sbatch --job-name="$job_name" \
+  slurm/train_grpo_vllm_1node.slurm \
+    --model "$model" \
+    --task "$task" \
+    --config "$config" \
+    --accelerator "$accelerator" \
+    --args "--run_name=${job_name}"
+
+model="Qwen2.5-1.5B-Instruct"
+partition="agentS-long"
+time="1-12:00:00"
+job_name="${model}-${task}-${config}"
+sbatch --job-name="$job_name" \
+       --partition="$partition" \
+       --time="$time" \
   slurm/train_grpo_vllm_1node.slurm \
     --model "$model" \
     --task "$task" \
@@ -106,7 +121,7 @@ sbatch --job-name="$job_name" \
 # ------------------------------ FIRST! ------------------------------
 # Edit directly `model_name_or_path` and `revision` in the config.yaml
 # --------------------------------------------------------------------
-#MODEL_ID="openPangu-Embedded-1B"
+MODEL_ID="openPangu-Embedded-1B"
 MODEL_ID="Qwen2.5-1.5B-Instruct"
 #MODEL_ID="Qwen3-0.6B"
 #MODEL_ID="Qwen3-1.7B"
