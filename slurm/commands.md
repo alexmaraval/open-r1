@@ -78,37 +78,27 @@ Or to launch on 3 GPUs on one single node with vLLM server, use this command
 
 ```shell
 task="grpo"
-#config="math1k"
-#config="gsm8k"
-config="math220k"
 accelerator="zero2-2gpu"
 
-model="openPangu-Embedded-1B"
-#model="openPangu-Embedded-7B"
-#model="Qwen2.5-1.5B-Instruct"
-
-job_name="${model}-${task}-${config}"
-```
-
-```shell
-partition="agentS-xlong"
-time="5-00:00:00"
-sbatch --job-name="$job_name" \
-       --partition="$partition" \
-       --time="$time" \
-  slurm/train_grpo_vllm_1node.slurm \
-    --model "$model" \
-    --task "$task" \
-    --config "$config" \
-    --accelerator "$accelerator" \
-    --args "--run_name=${job_name}"
-```
-
-```shell
 partition="agentS-long"
 time="1-12:00:00"
+#partition="agentS-xlong"
+#time="5-00:00:00"
+
+model="openPangu-Embedded-1B"
+#model="Qwen2.5-1.5B-Instruct"
+
+#config="bigmath"
+#config="deepmath"
+#config="deepscaler"
+#config="gsm8k"
+config="math1k"
+#config="math220k"
+#config="valimath"
+
 job_name="${model}-${task}-${config}"
-sbatch --job-name="$job_name" \
+
+sbatch --job-name="${job_name}" \
        --partition="$partition" \
        --time="$time" \
   slurm/train_grpo_vllm_1node.slurm \
@@ -117,6 +107,74 @@ sbatch --job-name="$job_name" \
     --config "$config" \
     --accelerator "$accelerator" \
     --args "--run_name=${job_name}"
+```
+
+
+And to launch on 2 GPUs on one single node with vLLM server, use this command (most suitable for small models)
+```shell
+task="grpo"
+partition="agentS-long"
+time="1-12:00:00"
+model="openPangu-Embedded-1B"
+config="bigmath"
+port=8011
+job_name="${model}-${task}-${config}"
+sbatch --job-name="${job_name}" \
+       --partition="$partition" \
+       --time="$time" \
+  slurm/train_grpo_vllm_1node_2gpu.slurm \
+    --model "$model" \
+    --task "$task" \
+    --config "$config" \
+    --vllm_host localhost \
+    --vllm_port $port \
+    --args "--run_name=${job_name}"
+```
+
+Rapid fire
+```shell
+task="grpo"
+
+#partition="agentS-long"
+#time="1-12:00:00"
+partition="agentS-xlong"
+time="5-00:00:00"
+
+#model="openPangu-Embedded-1B"
+model="Qwen2.5-1.5B-Instruct"
+
+# Define configs and their corresponding ports
+configs=(
+  bigmath
+  deepmath
+  deepscaler
+  gsm8k
+  math1k
+  math220k
+  valimath
+)
+#ports=( 8010 8011 8012 8013 8014 8015 8016)
+ports=( 8020 8021 8022 8023 8024 8025 8026)
+
+# Launch jobs
+for i in "${!configs[@]}"; do
+  config="${configs[$i]}"
+  port="${ports[$i]}"
+  job_name="${model}-${task}-${config}"
+
+  echo "Submitting job: $job_name on port $port"
+
+  sbatch --job-name="$job_name" \
+         --partition="$partition" \
+         --time="$time" \
+    slurm/train_grpo_vllm_1node_2gpu.slurm \
+      --model "$model" \
+      --task "$task" \
+      --config "$config" \
+      --vllm_host localhost \
+      --vllm_port "$port" \
+      --args "--run_name=$job_name"
+done
 ```
 
 # Evaluate
@@ -179,8 +237,14 @@ MODEL_REVISION="main"
 #TASK_NAME="gsm8k"
 #TASK="lighteval|math_500|0|0"
 #TASK_NAME="math_500"
-TASK="lighteval|aime24|0|0"
-TASK_NAME="aime24"
+#TASK="lighteval|aime24|0|0"
+#TASK_NAME="aime24"
+#TASK="lighteval|aime25|0|0"
+#TASK_NAME="aime25"
+#TASK="lighteval|gpqa:diamond|0|0"
+#TASK_NAME="gpqa_diamond"
+TASK="original|mmlu|0|0"
+TASK_NAME="mmlu"
 OUTPUT_DIR="eval_results/$MODEL_ID/$MODEL_REVISION/$TASK_NAME"
 
 echo "Running lighteval script for $TASK_NAME ..."

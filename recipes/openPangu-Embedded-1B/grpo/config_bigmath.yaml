@@ -52,7 +52,14 @@ reward_weights:
 - 0.8
 - 0.1
 - 0.1
-save_strategy: "epoch"
+scale_rewards: false # group: standard, none: Dr GRPO, batch: PPO Lite / DAPO
+epsilon_high: 0.28 # null: standard, > 0.2 (e.g. 0.28): DAPO
+loss_type: "dr_grpo" # grpo, dr_grpo, dapo, bnpo
+mask_truncated_completions: true # recommended in DAPO
+sync_ref_model: false # true: synchronize reference with active model every k steps as in TR-DPO
+top_entropy_quantile: 0.8
+use_liger_loss: false
+save_strategy: epoch
 save_total_limit: 4
 seed: 42
 warmup_ratio: 0.1

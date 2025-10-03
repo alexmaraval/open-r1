@@ -5,9 +5,8 @@ torch_dtype: bfloat16
 attn_implementation: flex_attention
 
 # Data training arguments
-dataset_name: openai/gsm8k
-dataset_config: main
-dataset_prompt_column: question
+dataset_name: agentica-org/DeepScaleR-Preview-Dataset
+dataset_prompt_column: problem
 dataset_answer_column: answer
 system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the boxed answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n\\boxed{...}\n</answer>"
 
@@ -20,7 +19,7 @@ gradient_accumulation_steps: 8
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: Qwen2.5-1.5B-Instruct-GRPO-GSM8k
+hub_model_id: Qwen2.5-1.5B-Instruct-GRPO-DeepScaleR
 hub_strategy: every_save
 hub_private_repo: true
 learning_rate: 2.0e-05
@@ -35,7 +34,7 @@ max_completion_length: 1024
 max_steps: -1
 num_generations: 16
 num_train_epochs: 4
-output_dir: runs/Qwen2.5-1.5B-Instruct-GRPO-GSM8k
+output_dir: runs/Qwen2.5-1.5B-Instruct-GRPO-DeepScaleR
 overwrite_output_dir: false
 per_device_eval_batch_size: 16
 per_device_train_batch_size: 32
@@ -43,7 +42,7 @@ push_to_hub: true
 report_to:
 - wandb
 reward_funcs:
-- gsm8k_verl_math_reward
+- verl_math_reward # accuracy, accuracy_with_timeout, verl_math_reward
 - format
 - tag_count
 reward_weights:
